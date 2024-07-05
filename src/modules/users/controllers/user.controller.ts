@@ -1,4 +1,3 @@
-// user.controller.ts
 import {
   Controller,
   Get,
@@ -9,10 +8,10 @@ import {
   Body,
   NotFoundException,
 } from "@nestjs/common";
-import { UserService } from "./user.service";
 import { Prisma } from "@prisma/client";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
-import { UserPipe } from "./user.pipe";
+import { UserService } from "../services/user.service";
+import { UserPipe } from "../flow/user.pipe";
 
 @ApiTags("users")
 @Controller("users")

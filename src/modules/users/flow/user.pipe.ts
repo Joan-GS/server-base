@@ -1,7 +1,7 @@
 import * as Joi from "joi";
 
-import { JoiValidationPipe } from "../common";
 import { Prisma } from "@prisma/client";
+import { JoiValidationPipe } from "../../common";
 
 export class UserPipe extends JoiValidationPipe {
     public buildSchema(): Joi.Schema {
