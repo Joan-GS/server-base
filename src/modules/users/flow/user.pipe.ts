@@ -13,6 +13,7 @@ export class UserPipe extends JoiValidationPipe {
             birthDate: Joi.date().iso(), // Validate as ISO-8601 format
             gender: Joi.string().valid('male', 'female', 'other').optional(),
             image: Joi.string().uri().optional(),
+            roles: Joi.string().valid('admin', 'user').required(),
         });
     }
 }

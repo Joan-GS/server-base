@@ -8,14 +8,21 @@ import {
     Body,
     NotFoundException,
     Query,
+    UseGuards,
 } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { UserService } from "../services/user.service";
 import { UserPipe } from "../flow/user.pipe";
+import { Roles } from "../../auth/utils/roles.decorator";
+import { Role } from "../../auth/utils/role.enum";
+import { AuthGuard } from "../../auth/security/auth.guard";
+import { RolesGuard } from "../../auth/utils/roles.guard";
 
 @ApiTags("users")
 @Controller("users")
+@Roles(Role.Admin)
+@UseGuards(AuthGuard, RolesGuard)
 export class UserController {
     constructor(private readonly userService: UserService) {}
 
@@ -43,8 +50,7 @@ export class UserController {
 
     // POST /users
     @Post()
-    // @UseGuards(AuthGuard)
-    // @Roles(Role.Admin)
+    @Roles(Role.Admin)
     @ApiOperation({ summary: "Create a new user" })
     async create(@Body(UserPipe) data: Prisma.UserCreateInput) {
         return this.userService.create(data); // Creates a new user with the provided data

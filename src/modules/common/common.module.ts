@@ -13,7 +13,7 @@ import { configProvider, LoggerService, PrismaService } from './provider';
         configProvider,
         LoggerService,
         LogInterceptor,
-        PrismaService
+        PrismaService,
     ],
     exports: [
         configProvider,
