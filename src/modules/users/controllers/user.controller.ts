@@ -21,7 +21,7 @@ export class UserController {
 
     // GET /users
     @Get()
-    @ApiOperation({ summary: "Get all users" })
+    @ApiOperation({ summary: "List users" })
     async list(
         @Query("page") page: number = 1,
         @Query("pageSize") pageSize: number = 10,
