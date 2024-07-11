@@ -1,11 +1,13 @@
 import * as Joi from 'joi';
 
-import { Service } from '../../tokens';
 import { Config } from '../model';
+import { AuthGuard } from '../../auth/security/auth.guard';
+import { RolesGuard } from '../../auth/utils/roles.guard';
 
 export const configProvider = {
 
-    provide: Service.CONFIG,
+    provide: AuthGuard,
+    useClass: RolesGuard,
     useFactory: (): Config => {
 
         const env = process.env;

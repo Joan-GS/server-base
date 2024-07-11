@@ -20,4 +20,5 @@ model User {
   birthDate  DateTime
   gender     String?
   image      String?
+  roles      String[]
 }

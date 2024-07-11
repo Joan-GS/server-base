@@ -1,7 +1,7 @@
 import { FastifyRequest } from 'fastify';
 import * as jwt from 'jsonwebtoken';
+import { Role } from '../../auth/utils/role.enum';
 
-import { Role } from '../../tokens';
 
 export function extractTokenPayload(request: FastifyRequest): { role: Role } | null {
 

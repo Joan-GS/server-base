@@ -43,6 +43,8 @@ export class UserController {
 
     // POST /users
     @Post()
+    // @UseGuards(AuthGuard)
+    // @Roles(Role.Admin)
     @ApiOperation({ summary: "Create a new user" })
     async create(@Body(UserPipe) data: Prisma.UserCreateInput) {
         return this.userService.create(data); // Creates a new user with the provided data

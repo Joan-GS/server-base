@@ -43,9 +43,9 @@ export class UserService {
         };
     }
 
-    async findOne(id: string) {
-        return this.prismaService.user.findUnique({
-            where: { id },
+    async findOne(email: string) {
+        return this.prismaService.user.findFirst({
+            where: { email: email },
         });
     }
 
