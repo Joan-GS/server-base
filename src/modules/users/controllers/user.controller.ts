@@ -14,7 +14,7 @@ import { Prisma } from "@prisma/client";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { UserService } from "../services/user.service";
 import { UserPipe } from "../flow/user.pipe";
-import { Roles } from "../../auth/utils/roles.decorator";
+import { Roles } from "../../auth/decorators/roles.decorator";
 import { Role } from "../../auth/utils/role.enum";
 import { RolesGuard } from "../../auth/utils/roles.guard";
 

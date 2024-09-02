@@ -3,7 +3,7 @@ import { AuthService } from "../services/auth.service";
 import { Prisma, Users } from "@prisma/client";
 import { ApiTags } from "@nestjs/swagger";
 import { Role } from "../utils/role.enum";
-import { Public } from "../utils/public.decorator";
+import { Public } from "../decorators/public.decorator";
 
 @ApiTags("auth")
 @Controller("auth")
