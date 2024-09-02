@@ -1,25 +1,36 @@
-import { Injectable, Dependencies, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { UserService } from '../../users/services/user.service';
+import {
+    Injectable,
+    UnauthorizedException,
+    ConflictException,
+} from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { UserService } from "../../users/services/user.service";
+import { Prisma, Users } from "@prisma/client";
 
-@Dependencies(UserService, JwtService)
 @Injectable()
 export class AuthService {
-    private readonly usersService: UserService;
-    private readonly jwtService: JwtService;
-  constructor(usersService: UserService, jwtService: JwtService) {
-    this.usersService = usersService;
-    this.jwtService = jwtService;
-  }
+    public constructor(
+        private readonly usersService: UserService,
+        private readonly jwtService: JwtService
+    ) {}
 
-  async signIn(email: string, pass: string) {
-    const user = await this.usersService.findOne(email);
-    if (user?.password !== pass) {
-      throw new UnauthorizedException();
+    async signIn(email: string, pass: string) {
+        const user = await this.usersService.findOne(email);
+        if (!user || user.password !== pass) {
+            throw new UnauthorizedException("Invalid credentials");
+        }
+        const payload = { email: user.email, sub: user.id, roles: user.roles };
+        return {
+            access_token: await this.jwtService.signAsync(payload),
+        };
     }
-    const payload = { email: user.email, sub: user.id, roles: user.roles };
-    return {
-      access_token: await this.jwtService.signAsync(payload),
-    };
-  }
+
+    async register(data: Prisma.UsersCreateInput): Promise<Users> {
+        const existingUser = await this.usersService.findOne(data.email);
+        if (existingUser) {
+            throw new ConflictException("User already exists");
+        }
+
+        return this.usersService.create(data);
+    }
 }

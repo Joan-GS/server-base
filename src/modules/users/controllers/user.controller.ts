@@ -16,13 +16,12 @@ import { UserService } from "../services/user.service";
 import { UserPipe } from "../flow/user.pipe";
 import { Roles } from "../../auth/utils/roles.decorator";
 import { Role } from "../../auth/utils/role.enum";
-import { AuthGuard } from "../../auth/security/auth.guard";
 import { RolesGuard } from "../../auth/utils/roles.guard";
 
 @ApiTags("users")
 @Controller("users")
 @Roles(Role.Admin)
-@UseGuards(AuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 export class UserController {
     constructor(private readonly userService: UserService) {}
 
@@ -50,9 +49,8 @@ export class UserController {
 
     // POST /users
     @Post()
-    @Roles(Role.Admin)
     @ApiOperation({ summary: "Create a new user" })
-    async create(@Body(UserPipe) data: Prisma.UserCreateInput) {
+    async create(@Body(UserPipe) data: Prisma.UsersCreateInput) {
         return this.userService.create(data); // Creates a new user with the provided data
     }
 
@@ -61,7 +59,7 @@ export class UserController {
     @ApiOperation({ summary: "Update an existing user by ID" })
     async update(
         @Param("id") id: string,
-        @Body() data: Prisma.UserUpdateInput
+        @Body() data: Prisma.UsersUpdateInput
     ) {
         const user = await this.userService.update(id, data);
         if (!user) {

@@ -9,7 +9,7 @@ export class UserService {
         // Calculate skip and take for pagination
         const skip = (page - 1) * pageSize;
         const take = Number(pageSize);
-        let where: Prisma.UserWhereInput = {};
+        let where: Prisma.UsersWhereInput = {};
 
         // Parse filters if present
         if (filters) {
@@ -24,12 +24,12 @@ export class UserService {
 
         // Perform transaction to fetch users and total count
         const [users, total] = await this.prismaService.$transaction([
-            this.prismaService.user.findMany({
+            this.prismaService.users.findMany({
                 where,
                 skip,
                 take,
             }),
-            this.prismaService.user.count({
+            this.prismaService.users.count({
                 where,
             }),
         ]);
@@ -44,26 +44,26 @@ export class UserService {
     }
 
     async findOne(email: string) {
-        return this.prismaService.user.findFirst({
+        return this.prismaService.users.findUnique({
             where: { email: email },
         });
     }
 
-    async create(data: Prisma.UserCreateInput) {
-        return this.prismaService.user.create({
+    async create(data: Prisma.UsersCreateInput) {
+        return this.prismaService.users.create({
             data,
         });
     }
 
-    async update(id: string, data: Prisma.UserUpdateInput) {
-        return this.prismaService.user.update({
+    async update(id: string, data: Prisma.UsersUpdateInput) {
+        return this.prismaService.users.update({
             where: { id },
             data,
         });
     }
 
     async delete(id: string) {
-        return this.prismaService.user.delete({
+        return this.prismaService.users.delete({
             where: { id },
         });
     }
