@@ -3,7 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
-  output = "../node_modules/.prisma/client"
+  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -11,8 +11,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Passenger {
-  id       String    @id @default(auto()) @map("_id") @db.ObjectId
-  firstName String @unique
-  lastName  String
+model User {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  givenName  String
+  familyName String
+  email      String    @unique
+  password   String
+  birthDate  DateTime?
+  gender     String?
+  image      String?
+  roles      String?
+
+  @@map("Users")
 }

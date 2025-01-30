@@ -1,11 +1,11 @@
 import * as Joi from 'joi';
 
-import { Service } from '../../tokens';
 import { Config } from '../model';
+
 
 export const configProvider = {
 
-    provide: Service.CONFIG,
+
     useFactory: (): Config => {
 
         const env = process.env;

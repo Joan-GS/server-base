@@ -1,17 +1,20 @@
-import { INestApplication } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { INestApplication } from "@nestjs/common";
+import { NestFactory } from "@nestjs/core";
+import {
+    FastifyAdapter,
+    NestFastifyApplication,
+} from "@nestjs/platform-fastify";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 
-import { ApplicationModule } from './modules/app.module';
-import { CommonModule, LogInterceptor } from './modules/common';
+import { ApplicationModule } from "./modules/app.module";
+import { CommonModule, LogInterceptor } from "./modules/common";
 
 /**
  * These are API defaults that can be changed using environment variables,
  * it is not required to change them (see the `.env.example` file)
  */
 const API_DEFAULT_PORT = 3000;
-const API_DEFAULT_PREFIX = '/api/v1/';
+const API_DEFAULT_PREFIX = "/api/v1/";
 
 /**
  * The defaults below are dedicated to Swagger configuration, change them
@@ -19,9 +22,9 @@ const API_DEFAULT_PREFIX = '/api/v1/';
  *
  * @todo Change the constants below following your API requirements
  */
-const SWAGGER_TITLE = 'Passenger API';
-const SWAGGER_DESCRIPTION = 'API used for passenger management';
-const SWAGGER_PREFIX = '/docs';
+const SWAGGER_TITLE = "Base API";
+const SWAGGER_DESCRIPTION = "API used for base management";
+const SWAGGER_PREFIX = "/docs";
 
 /**
  * Register a Swagger module in the NestJS application.
@@ -33,7 +36,6 @@ const SWAGGER_PREFIX = '/docs';
  *       code below with API keys, security requirements, tags and more.
  */
 function createSwagger(app: INestApplication) {
-
     const options = new DocumentBuilder()
         .setTitle(SWAGGER_TITLE)
         .setDescription(SWAGGER_DESCRIPTION)
@@ -51,7 +53,6 @@ function createSwagger(app: INestApplication) {
  * parsing middleware.
  */
 async function bootstrap(): Promise<void> {
-
     const app = await NestFactory.create<NestFastifyApplication>(
         ApplicationModule,
         new FastifyAdapter()
@@ -61,7 +62,7 @@ async function bootstrap(): Promise<void> {
 
     app.setGlobalPrefix(process.env.API_PREFIX || API_DEFAULT_PREFIX);
 
-    if (!process.env.SWAGGER_ENABLE || process.env.SWAGGER_ENABLE === '1') {
+    if (!process.env.SWAGGER_ENABLE || process.env.SWAGGER_ENABLE === "1") {
         createSwagger(app);
     }
 
@@ -79,8 +80,7 @@ async function bootstrap(): Promise<void> {
  * @todo It is often advised to enhance the code below with an exception-catching
  *       service for better error handling in production environments.
  */
-bootstrap().catch(err => {
-
+bootstrap().catch((err) => {
     // eslint-disable-next-line no-console
     console.error(err);
 
