@@ -1,7 +1,7 @@
 {
-  "name": "nest-template",
+  "name": "server-base",
   "version": "0.1.0",
-  "description": "NestJS API project template crafted for Docker environments",
+  "description": "NestJS API server template",
   "author": "Saluki",
   "license": "MIT",
   "private": true,
