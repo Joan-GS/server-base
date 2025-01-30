@@ -5,7 +5,7 @@ import {
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { UserService } from "../../users/services/user.service";
-import { Prisma, Users } from "@prisma/client";
+import { Prisma, User } from "@prisma/client";
 
 @Injectable()
 export class AuthService {
@@ -25,7 +25,7 @@ export class AuthService {
         };
     }
 
-    async register(data: Prisma.UsersCreateInput): Promise<Users> {
+    async register(data: Prisma.UserCreateInput): Promise<User> {
         const existingUser = await this.usersService.findOne(data.email);
         if (existingUser) {
             throw new ConflictException("User already exists");

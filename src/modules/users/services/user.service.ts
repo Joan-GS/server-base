@@ -5,13 +5,13 @@ import { PrismaService } from "../../common";
 @Injectable()
 export class UserService {
     public constructor(private readonly prismaService: PrismaService) {}
-    async list(page: number, pageSize: number, filters?: string) {
-        // Calculate skip and take for pagination
-        const skip = (page - 1) * pageSize;
-        const take = Number(pageSize);
-        let where: Prisma.UsersWhereInput = {};
 
-        // Parse filters if present
+    /**
+     * Utility function to handle common pagination and filtering logic
+     */
+    private parseFilters(filters?: string): Prisma.UserWhereInput {
+        let where: Prisma.UserWhereInput = {};
+
         if (filters) {
             try {
                 where = JSON.parse(filters);
@@ -22,19 +22,29 @@ export class UserService {
             }
         }
 
-        // Perform transaction to fetch users and total count
+        return where;
+    }
+
+    /**
+     * List users with pagination and filters
+     */
+    async list(page: number, pageSize: number, filters?: string) {
+        const skip = (page - 1) * pageSize;
+        const take = Number(pageSize);
+        const where = this.parseFilters(filters);
+
+        // Use transaction to perform both queries simultaneously
         const [users, total] = await this.prismaService.$transaction([
-            this.prismaService.users.findMany({
+            this.prismaService.user.findMany({
                 where,
                 skip,
                 take,
             }),
-            this.prismaService.users.count({
+            this.prismaService.user.count({
                 where,
             }),
         ]);
 
-        // Return paginated results
         return {
             data: users,
             total,
@@ -43,27 +53,39 @@ export class UserService {
         };
     }
 
-    async findOne(email: string) {
-        return this.prismaService.users.findUnique({
-            where: { email: email },
+    /**
+     * Find a user by their ID
+     */
+    async findOne(id: string) {
+        return this.prismaService.user.findUnique({
+            where: { id: id },
         });
     }
 
-    async create(data: Prisma.UsersCreateInput) {
-        return this.prismaService.users.create({
+    /**
+     * Create a new user
+     */
+    async create(data: Prisma.UserCreateInput) {
+        return this.prismaService.user.create({
             data,
         });
     }
 
-    async update(id: string, data: Prisma.UsersUpdateInput) {
-        return this.prismaService.users.update({
+    /**
+     * Update an existing user by ID
+     */
+    async update(id: string, data: Prisma.UserUpdateInput) {
+        return this.prismaService.user.update({
             where: { id },
             data,
         });
     }
 
+    /**
+     * Delete a user by ID
+     */
     async delete(id: string) {
-        return this.prismaService.users.delete({
+        return this.prismaService.user.delete({
             where: { id },
         });
     }

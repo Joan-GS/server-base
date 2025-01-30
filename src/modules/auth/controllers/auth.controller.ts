@@ -1,6 +1,6 @@
 import { Body, Controller, Post } from "@nestjs/common";
 import { AuthService } from "../services/auth.service";
-import { Prisma, Users } from "@prisma/client";
+import { Prisma, User } from "@prisma/client";
 import { ApiTags } from "@nestjs/swagger";
 import { Role } from "../utils/role.enum";
 import { Public } from "../decorators/public.decorator";
@@ -18,7 +18,7 @@ export class AuthController {
 
     @Public()
     @Post("register")
-    register(@Body() data: Prisma.UsersCreateInput): Promise<Users> {
+    register(@Body() data: Prisma.UserCreateInput): Promise<User> {
         data.roles = Role.Admin;
         return this.authService.register(data);
     }

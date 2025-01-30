@@ -10,13 +10,14 @@ import {
     Query,
     UseGuards,
 } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { Prisma, User } from "@prisma/client";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { UserService } from "../services/user.service";
 import { UserPipe } from "../flow/user.pipe";
 import { Roles } from "../../auth/decorators/roles.decorator";
 import { Role } from "../../auth/utils/role.enum";
 import { RolesGuard } from "../../auth/utils/roles.guard";
+import { PaginationResponse } from "../../../utils/generic.types.utils";
 
 @ApiTags("users")
 @Controller("users")
@@ -25,57 +26,94 @@ import { RolesGuard } from "../../auth/utils/roles.guard";
 export class UserController {
     constructor(private readonly userService: UserService) {}
 
-    // GET /users
+    /************
+     ** METHODS **
+     *************/
+
+    private async ensureUserExists(id: string): Promise<User> {
+        const user = await this.userService.findOne(id);
+        if (!user) {
+            throw new NotFoundException(`User with id ${id} not found`);
+        }
+        return user;
+    }
+
+    /************
+     ** ACTIONS **
+     *************/
+
+    /**
+     * GET /users - List users with pagination and filters
+     *
+     * @param page - Page number (default: 1)
+     * @param pageSize - Items per page (default: 10)
+     * @param filters - Optional query filters
+     * @returns Paginated list of users
+     */
     @Get()
     @ApiOperation({ summary: "List users" })
     async list(
         @Query("page") page: number = 1,
         @Query("pageSize") pageSize: number = 10,
         @Query("filters") filters?: string
-    ) {
-        return this.userService.list(page, pageSize, filters); // Retrieves all users with pagination
+    ): Promise<PaginationResponse<User>> {
+        return this.userService.list(page, pageSize, filters);
     }
 
-    // GET /users/:id
+    /**
+     * GET /users/:id - Retrieve a user by ID
+     *
+     * @param id - User ID
+     * @returns User data
+     * @throws NotFoundException if user is not found
+     */
     @Get(":id")
     @ApiOperation({ summary: "Get a user by ID" })
-    async findOne(@Param("id") id: string) {
-        const user = await this.userService.findOne(id);
-        if (!user) {
-            throw new NotFoundException(`User with id ${id} not found`);
-        }
-        return user; // Returns a specific user by ID
+    async findOne(@Param("id") id: string): Promise<User> {
+        return this.ensureUserExists(id);
     }
 
-    // POST /users
+    /**
+     * POST /users - Create a new user
+     *
+     * @param data - User data
+     * @returns Created user
+     */
     @Post()
     @ApiOperation({ summary: "Create a new user" })
-    async create(@Body(UserPipe) data: Prisma.UsersCreateInput) {
-        return this.userService.create(data); // Creates a new user with the provided data
+    async create(@Body(UserPipe) data: Prisma.UserCreateInput): Promise<User> {
+        return this.userService.create(data);
     }
 
-    // PUT /users/:id
+    /**
+     * PUT /users/:id - Update an existing user
+     *
+     * @param id - User ID
+     * @param data - Updated user data
+     * @returns Updated user
+     * @throws NotFoundException if user is not found
+     */
     @Put(":id")
     @ApiOperation({ summary: "Update an existing user by ID" })
     async update(
         @Param("id") id: string,
-        @Body() data: Prisma.UsersUpdateInput
-    ) {
-        const user = await this.userService.update(id, data);
-        if (!user) {
-            throw new NotFoundException(`User with id ${id} not found`);
-        }
-        return user; // Updates an existing user by ID with the provided data
+        @Body() data: Prisma.UserUpdateInput
+    ): Promise<User> {
+        await this.ensureUserExists(id);
+        return this.userService.update(id, data);
     }
 
-    // DELETE /users/:id
+    /**
+     * DELETE /users/:id - Delete a user
+     *
+     * @param id - User ID
+     * @returns Deleted user
+     * @throws NotFoundException if user is not found
+     */
     @Delete(":id")
     @ApiOperation({ summary: "Delete a user by ID" })
-    async delete(@Param("id") id: string) {
-        const deletedUser = await this.userService.delete(id);
-        if (!deletedUser) {
-            throw new NotFoundException(`User with id ${id} not found`);
-        }
-        return deletedUser; // Deletes a user by ID
+    async delete(@Param("id") id: string): Promise<User> {
+        await this.ensureUserExists(id);
+        return this.userService.delete(id);
     }
 }

@@ -5,7 +5,7 @@ import { JoiValidationPipe } from "../../common";
 
 export class UserPipe extends JoiValidationPipe {
     public buildSchema(): Joi.Schema {
-        return Joi.object<Prisma.UsersCreateInput>({
+        return Joi.object<Prisma.UserCreateInput>({
             givenName: Joi.string().trim().required().min(2).max(50),
             familyName: Joi.string().trim().required().min(2).max(50),
             email: Joi.string().trim().email().required(),
