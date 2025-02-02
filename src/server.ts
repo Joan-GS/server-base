@@ -69,6 +69,12 @@ async function bootstrap(): Promise<void> {
     const logInterceptor = app.select(CommonModule).get(LogInterceptor);
     app.useGlobalInterceptors(logInterceptor);
 
+    app.enableCors({
+        origin: '*', // Or use a specific domain like 'http://localhost:8081' if you want to restrict it
+        methods: ['GET', 'POST', 'PUT', 'DELETE'], // Add methods based on your needs
+        allowedHeaders: ['Content-Type', 'Authorization'], // Add headers if needed
+      });
+
     await app.listen(process.env.API_PORT || API_DEFAULT_PORT);
 }
 
