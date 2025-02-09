@@ -89,4 +89,13 @@ export class UserService {
             where: { id },
         });
     }
+
+    /**
+     * Find a user by their verification code
+     */
+    async findByVerificationToken(code: string) {
+        return this.prismaService.user.findUnique({
+            where: { verificationCode: code },
+        });
+    }
 }

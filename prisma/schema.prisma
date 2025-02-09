@@ -12,15 +12,16 @@ datasource db {
 }
 
 model User {
-  id         String    @id @default(auto()) @map("_id") @db.ObjectId
-  givenName  String
-  familyName String
-  email      String    @unique
-  password   String
-  birthDate  DateTime?
-  gender     String?
-  image      String?
-  roles      String?
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  userName         String
+  email            String    @unique
+  password         String
+  birthDate        DateTime?
+  gender           String?
+  image            String?
+  roles            String?
+  isVerified       Boolean   @default(false)
+  verificationCode String?   @unique
 
   @@map("Users")
 }
