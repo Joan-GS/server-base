@@ -3,6 +3,7 @@ import {
     UnauthorizedException,
     ConflictException,
     BadRequestException,
+    NotFoundException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { UserService } from "../../users/services/user.service";
@@ -80,9 +81,9 @@ export class AuthService {
         return user;
     }
 
-    async verifyEmailCode(token: string): Promise<User> {
+    async verifyEmailCode(code: string): Promise<User> {
         // Find the user by verification token
-        const user = await this.usersService.findByVerificationToken(token);
+        const user = await this.usersService.findByVerificationToken(code);
 
         // Ensure the token is valid and exists
         if (!user) {
@@ -124,5 +125,44 @@ export class AuthService {
         } catch (error) {
             throw new UnauthorizedException("Invalid or expired refresh token");
         }
+    }
+    /*******************************
+     ** LÓGICA PARA REENVIAR CÓDIGO **
+     *******************************/
+
+    // Buscar usuario por email
+    async findUserByEmail(email: string): Promise<User> {
+        const user = await this.usersService.findOne(email);
+        if (!user) {
+            throw new NotFoundException("User not found");
+        }
+        return user;
+    }
+
+    // Actualizar el código de verificación del usuario
+    async updateVerificationCode(userId: string, newCode: string) {
+        return this.usersService.update(userId, {
+            verificationCode: newCode,
+        });
+    }
+
+
+
+    // Función principal para reenviar el código de verificación
+    async resendVerificationCode(email: string): Promise<{ message: string }> {
+        const user = await this.findUserByEmail(email);
+
+        if (user.isVerified) {
+            throw new BadRequestException("Email is already verified");
+        }
+
+        const newCode = await this.generateVerificationCode();
+
+        await this.updateVerificationCode(user.id, newCode);
+        await this.mailService.sendUserConfirmation(user, newCode);
+
+        return {
+            message: "A new verification code has been sent to your email",
+        };
     }
 }

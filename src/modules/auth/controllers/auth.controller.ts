@@ -3,7 +3,6 @@ import {
     Body,
     Controller,
     Post,
-    Query,
 } from "@nestjs/common";
 import { AuthService } from "../services/auth.service";
 import { Prisma, User } from "@prisma/client";
@@ -76,14 +75,14 @@ export class AuthController {
     @Public()
     @Post("confirm")
     @ApiOperation({ summary: "Confirm email address using verification code" })
-    async confirmEmail(@Query("code") code: string) {
+    async confirmEmail(@Body() code: Record<string, any>) {
         // Ensure the code is provided
         if (!code) {
             throw new BadRequestException("Verification code is required");
         }
 
         // Attempt to verify the code and get the associated user
-        const user = await this.authService.verifyEmailCode(code);
+        const user = await this.authService.verifyEmailCode(code.code);
 
         // Handle case where no user was found for the verification code
         if (!user) {
@@ -94,5 +93,29 @@ export class AuthController {
 
         // Return success message and the confirmed user
         return { message: "Email confirmed successfully", user };
+    }
+
+    /**
+     * POST /auth/resend - Reenviar código de verificación
+     *
+     * @param email - Email del usuario que necesita un nuevo código
+     * @returns Mensaje de confirmación
+     * @throws BadRequestException si el email no es válido o el usuario no existe
+     */
+    @Public()
+    @Post("resend")
+    @ApiOperation({ summary: "Resend email verification code" })
+    async resendVerificationCode(@Body("email") email: string) {
+        // Validar si se proporciona un email
+        if (!email) {
+            throw new BadRequestException("Email is required");
+        }
+
+        // Enviar el nuevo código por email
+        await this.authService.resendVerificationCode(email);
+
+        return {
+            message: "A new verification code has been sent to your email",
+        };
     }
 }

@@ -6,8 +6,8 @@ import { User } from "@prisma/client";
 export class MailService {
     constructor(private mailerService: MailerService) {}
 
-    async sendUserConfirmation(user: User, verificationCode: string) {
-        const url = `${process.env.FRONTEND_URL}/auth/confirm?token=${verificationCode}`;
+    async sendUserConfirmation(user: User, code: string) {
+        const url = `http://localhost:8081/auth/verify-mail?email=${user.email}&code=${code}`;
 
         await this.mailerService.sendMail({
             to: user.email,
