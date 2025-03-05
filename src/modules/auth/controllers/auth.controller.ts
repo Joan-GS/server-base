@@ -2,7 +2,9 @@ import {
     BadRequestException,
     Body,
     Controller,
+    Get,
     Post,
+    Headers,
 } from "@nestjs/common";
 import { AuthService } from "../services/auth.service";
 import { Prisma, User } from "@prisma/client";
@@ -18,6 +20,35 @@ export class AuthController {
     /************
      ** ACTIONS **
      ************/
+
+    /**
+     * GET /auth/me - Get the username of the authenticated user
+     *
+     * @param access_token - The user's access token in the request headers
+     * @returns Username of the authenticated user
+     * @throws UnauthorizedException if the user is not authenticated
+     */
+    @Get("me")
+    @ApiOperation({ summary: "Get the authenticated user's attributes" })
+    async me(@Headers("authorization") authorization: string) {
+        // Validate if token is provided in the Authorization header
+        if (!authorization) {
+            throw new BadRequestException("Authorization token is required");
+        }
+
+        const token = authorization.split(" ")[1]; // Extract the Bearer token
+
+        // Use the auth service to decode the token and get user details
+        const user = await this.authService.me(token);
+
+        if (!user) {
+            throw new BadRequestException("User not found or invalid token");
+        }
+
+        return {
+            username: user.userName, // Return the username of the authenticated user
+        };
+    }
 
     /**
      * POST /auth/login - Authenticate a user

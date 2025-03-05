@@ -19,6 +19,24 @@ export class AuthService {
         private readonly jwtService: JwtService
     ) {}
 
+    async me(access_token: string) {
+        // Decode the token to get the payload
+        const decoded = this.jwtService.decode(access_token) as { email: string };
+
+        // Check if the token was decoded correctly and contains the 'email' (subject) field
+        if (!decoded?.email) {
+            throw new UnauthorizedException("Invalid token");
+        }
+
+        // Retrieve the user using the 'email' field (usually the user ID)
+        const user = await this.usersService.findOne(decoded.email);
+
+        // Return the username of the user
+        return {
+            userName: user?.userName, // Return the user's username
+        };
+    }
+
     async signIn(email: string, pass: string) {
         const user = await this.usersService.findOne(email);
 
@@ -145,8 +163,6 @@ export class AuthService {
             verificationCode: newCode,
         });
     }
-
-
 
     // Función principal para reenviar el código de verificación
     async resendVerificationCode(email: string): Promise<{ message: string }> {
