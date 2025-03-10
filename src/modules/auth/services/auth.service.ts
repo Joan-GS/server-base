@@ -33,7 +33,7 @@ export class AuthService {
 
         // Return the username of the user
         return {
-            userName: user?.userName, // Return the user's username
+            userName: user?.username, // Return the user's username
         };
     }
 
