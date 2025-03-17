@@ -11,6 +11,10 @@ export class ClimbPipe extends JoiValidationPipe {
             gradeAverage: Joi.number().optional().min(0).max(5),
             tags: Joi.array().items(Joi.string()).optional(),
             status: Joi.string().valid("open", "closed").optional(),
+            likesCount: Joi.number().default(0).min(0),
+            commentsCount: Joi.number().default(0).min(0),
+            recentLikes: Joi.array().items(Joi.string()).max(5).default([]),
+            recentComments: Joi.array().items(Joi.string()).max(5).default([]),
             createdBy: Joi.string().required(),
         });
     }

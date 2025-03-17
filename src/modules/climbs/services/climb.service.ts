@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
+import {
+    Injectable,
+    BadRequestException,
+    NotFoundException,
+} from "@nestjs/common";
 import { Climb, Prisma } from "@prisma/client";
 import { PrismaService } from "../../common";
 
@@ -14,7 +18,9 @@ export class ClimbService {
             try {
                 where = JSON.parse(filters);
             } catch (error) {
-                throw new BadRequestException("Invalid JSON format for filters");
+                throw new BadRequestException(
+                    "Invalid JSON format for filters"
+                );
             }
         }
 
@@ -27,8 +33,8 @@ export class ClimbService {
             where: { id },
             include: {
                 ascensions: true, // Include ascensions in the response
-                likes: true,      // Include likes in the response
-                comments: true,   // Include comments in the response
+                likes: true, // Include likes in the response
+                comments: true, // Include comments in the response
             },
         });
 
@@ -115,6 +121,94 @@ export class ClimbService {
                 ascensions: true,
                 likes: true,
                 comments: true,
+            },
+        });
+    }
+
+    // Updates the list of recent likes, keeping only the last 5, and increments the likes count
+    async updateRecentLikes(climbId: string, userId: string) {
+        const climb = await this.prismaService.climb.findUnique({
+            where: { id: climbId },
+            select: { recentLikes: true, likesCount: true },
+        });
+
+        if (!climb) return;
+
+        let updatedLikes = [userId, ...climb.recentLikes];
+        if (updatedLikes.length > 5) {
+            updatedLikes = updatedLikes.slice(0, 5);
+        }
+
+        await this.prismaService.climb.update({
+            where: { id: climbId },
+            data: {
+                recentLikes: updatedLikes,
+                likesCount: climb.likesCount + 1,
+            },
+        });
+    }
+
+    // Removes a like from recent likes and decrements the likes count
+    async removeRecentLike(climbId: string, userId: string) {
+        const climb = await this.prismaService.climb.findUnique({
+            where: { id: climbId },
+            select: { recentLikes: true, likesCount: true },
+        });
+
+        if (!climb) return;
+
+        const updatedLikes = climb.recentLikes.filter((id) => id !== userId);
+
+        await this.prismaService.climb.update({
+            where: { id: climbId },
+            data: {
+                recentLikes: updatedLikes,
+                likesCount: Math.max(0, climb.likesCount - 1),
+            },
+        });
+    }
+
+    // Updates the list of recent comments, keeping only the last 5, and increments the comments count
+    async updateRecentComments(climbId: string, commentId: string) {
+        const climb = await this.prismaService.climb.findUnique({
+            where: { id: climbId },
+            select: { recentComments: true, commentsCount: true },
+        });
+
+        if (!climb) return;
+
+        let updatedComments = [commentId, ...climb.recentComments];
+        if (updatedComments.length > 5) {
+            updatedComments = updatedComments.slice(0, 5);
+        }
+
+        await this.prismaService.climb.update({
+            where: { id: climbId },
+            data: {
+                recentComments: updatedComments,
+                commentsCount: climb.commentsCount + 1,
+            },
+        });
+    }
+
+    // Removes a comment from recent comments and decrements the comments count
+    async removeRecentComment(climbId: string, commentId: string) {
+        const climb = await this.prismaService.climb.findUnique({
+            where: { id: climbId },
+            select: { recentComments: true, commentsCount: true },
+        });
+
+        if (!climb) return;
+
+        const updatedComments = climb.recentComments.filter(
+            (id) => id !== commentId
+        );
+
+        await this.prismaService.climb.update({
+            where: { id: climbId },
+            data: {
+                recentComments: updatedComments,
+                commentsCount: Math.max(0, climb.commentsCount - 1),
             },
         });
     }

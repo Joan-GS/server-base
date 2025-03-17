@@ -38,12 +38,16 @@ model User {
 }
 
 model Climb {
-  id            String  @id @default(auto()) @map("_id") @db.ObjectId
-  title         String  @unique
-  description   String?
-  ratingAverage Float
-  grade         String
-  gradeAverage  Float
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  title          String   @unique
+  description    String?
+  ratingAverage  Float
+  grade          String
+  gradeAverage   Float
+  likesCount     Int      @default(0)
+  commentsCount  Int      @default(0)
+  recentLikes    String[] @default([]) @db.ObjectId
+  recentComments String[] @default([]) @db.ObjectId
 
   // Time tracking fields
   createdAt DateTime  @default(now())
@@ -61,6 +65,7 @@ model Climb {
 
   // Indexing for performance
   @@index([tags])
+  @@index([likesCount, commentsCount, createdAt(sort: Desc)])
   @@index([createdBy])
   @@index([deletedAt])
   @@map("Climbs")
@@ -105,6 +110,7 @@ model Like {
 
   // Indexing for performance
   @@index([userId, climbId])
+  @@index([climbId, likedAt(sort: Desc)])
   @@index([deletedAt])
   @@map("Likes")
 }
@@ -114,7 +120,7 @@ model Comment {
   content   String
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  deletedAt DateTime? // Soft delete
+  deletedAt DateTime? 
 
   userId      String  @db.ObjectId
   climbId     String  @db.ObjectId
@@ -127,6 +133,7 @@ model Comment {
 
   // Indexing for performance
   @@index([userId, climbId])
+  @@index([climbId, createdAt(sort: Desc)])
   @@index([createdAt])
   @@index([deletedAt])
   @@map("Comments")
