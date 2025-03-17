@@ -5,6 +5,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { UserModule } from "../users/users.module";
 import { APP_GUARD } from "@nestjs/core";
 import { AuthGuard } from "./security/auth.guard";
+import { MailModule } from "../email/email.module";
 
 @Module({
     imports: [
@@ -14,6 +15,7 @@ import { AuthGuard } from "./security/auth.guard";
             secret: `${process.env.JWT_SECRET}`,
             signOptions: { expiresIn: "1 days" },
         }),
+        MailModule,
     ],
     providers: [
         AuthService,

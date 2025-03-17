@@ -54,11 +54,11 @@ export class UserService {
     }
 
     /**
-     * Find a user by their ID
+     * Find a user by their email
      */
-    async findOne(id: string) {
+    async findOne(email: string) {
         return this.prismaService.user.findUnique({
-            where: { id: id },
+            where: { email: email },
         });
     }
 
@@ -87,6 +87,15 @@ export class UserService {
     async delete(id: string) {
         return this.prismaService.user.delete({
             where: { id },
+        });
+    }
+
+    /**
+     * Find a user by their verification code
+     */
+    async findByVerificationToken(code: string) {
+        return this.prismaService.user.findUnique({
+            where: { verificationCode: code },
         });
     }
 }

@@ -1,0 +1,21 @@
+import * as Joi from "joi";
+import { JoiValidationPipe } from "../../common";
+
+export class ClimbPipe extends JoiValidationPipe {
+    public buildSchema() {
+        return Joi.object({
+            title: Joi.string().trim().required().min(2).max(100),
+            description: Joi.string().optional().max(500),
+            ratingAverage: Joi.number().optional().min(0).max(5),
+            grade: Joi.string().required(),
+            gradeAverage: Joi.number().optional().min(0).max(5),
+            tags: Joi.array().items(Joi.string()).optional(),
+            status: Joi.string().valid("open", "closed").optional(),
+            likesCount: Joi.number().default(0).min(0),
+            commentsCount: Joi.number().default(0).min(0),
+            recentLikes: Joi.array().items(Joi.string()).max(5).default([]),
+            recentComments: Joi.array().items(Joi.string()).max(5).default([]),
+            createdBy: Joi.string().required(),
+        });
+    }
+}

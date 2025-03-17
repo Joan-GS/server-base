@@ -30,7 +30,7 @@ export class UserController {
      ** METHODS **
      *************/
 
-    private async ensureUserExists(id: string): Promise<User> {
+    public async ensureUserExists(id: string): Promise<User> {
         const user = await this.userService.findOne(id);
         if (!user) {
             throw new NotFoundException(`User with id ${id} not found`);

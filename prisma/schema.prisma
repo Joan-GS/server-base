@@ -1,5 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Prisma schema file for a scalable application
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
@@ -12,15 +12,129 @@ datasource db {
 }
 
 model User {
-  id         String    @id @default(auto()) @map("_id") @db.ObjectId
-  givenName  String
-  familyName String
-  email      String    @unique
-  password   String
-  birthDate  DateTime?
-  gender     String?
-  image      String?
-  roles      String?
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  username         String
+  email            String    @unique
+  password         String
+  birthDate        DateTime?
+  gender           String?
+  profileImage     String?
+  roles            String?
+  isVerified       Boolean   @default(false)
+  verificationCode String?   @unique
+
+  // Time tracking fields
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Relationships
+  createdClimbs Climb[]     @relation("UserCreates")
+  ascensions    Ascension[]
+  likes         Like[]
+  comments      Comment[]
 
   @@map("Users")
+}
+
+model Climb {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  title          String   @unique
+  description    String?
+  ratingAverage  Float
+  grade          String
+  gradeAverage   Float
+  likesCount     Int      @default(0)
+  commentsCount  Int      @default(0)
+  recentLikes    String[] @default([]) @db.ObjectId
+  recentComments String[] @default([]) @db.ObjectId
+
+  // Time tracking fields
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Relationships
+  ascensions    Ascension[]
+  likes         Like[]
+  tags          String[]
+  status        String?
+  createdBy     String      @db.ObjectId
+  createdByUser User        @relation("UserCreates", fields: [createdBy], references: [id])
+  comments      Comment[]
+
+  // Indexing for performance
+  @@index([tags])
+  @@index([likesCount, commentsCount, createdAt(sort: Desc)])
+  @@index([createdBy])
+  @@index([deletedAt])
+  @@map("Climbs")
+}
+
+model Ascension {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  climbId    String   @db.ObjectId
+  ascendedAt DateTime @default(now())
+
+  // Time tracking fields
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Relationships
+  user     User      @relation(fields: [userId], references: [id])
+  climb    Climb     @relation(fields: [climbId], references: [id])
+  comments Comment[]
+
+  // Indexing for performance
+  @@index([userId, climbId])
+  @@index([deletedAt])
+  @@map("Ascensions")
+}
+
+model Like {
+  id      String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String   @db.ObjectId
+  climbId String   @db.ObjectId
+  likedAt DateTime @default(now())
+
+  // Time tracking fields
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Relationships
+  user  User  @relation(fields: [userId], references: [id])
+  climb Climb @relation(fields: [climbId], references: [id])
+
+  // Indexing for performance
+  @@index([userId, climbId])
+  @@index([climbId, likedAt(sort: Desc)])
+  @@index([deletedAt])
+  @@map("Likes")
+}
+
+model Comment {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  content   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? 
+
+  userId      String  @db.ObjectId
+  climbId     String  @db.ObjectId
+  ascensionId String? @db.ObjectId
+
+  // Relationships
+  user      User       @relation(fields: [userId], references: [id])
+  climb     Climb      @relation(fields: [climbId], references: [id])
+  ascension Ascension? @relation(fields: [ascensionId], references: [id])
+
+  // Indexing for performance
+  @@index([userId, climbId])
+  @@index([climbId, createdAt(sort: Desc)])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@map("Comments")
 }
