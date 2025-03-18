@@ -46,7 +46,7 @@ export class AuthController {
         }
 
         return {
-            username: user.userName, // Return the username of the authenticated user
+            username: user.username, // Return the username of the authenticated user
         };
     }
 

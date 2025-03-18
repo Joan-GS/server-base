@@ -62,6 +62,10 @@ export class LikeService {
 
             if (!like) throw new Error("Like not found");
 
+            console.log("Recent Likes Before Filter:", climb.recentLikes);
+console.log("User ID to Remove:", userId);
+
+
             // Remove the user from the recent likes array
             const updatedLikes = climb.recentLikes.filter(
                 (id) => id !== userId
@@ -83,5 +87,12 @@ export class LikeService {
 
             return like;
         });
+    }
+
+    async isLiked(climbId: string, userId: string): Promise<boolean> {
+        const existingLike = await this.prismaService.like.findFirst({
+            where: { climbId, userId },
+        });
+        return !!existingLike;
     }
 }

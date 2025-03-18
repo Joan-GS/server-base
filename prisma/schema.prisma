@@ -33,17 +33,21 @@ model User {
   ascensions    Ascension[]
   likes         Like[]
   comments      Comment[]
+  followers     Follow[]    @relation("UserFollowers")
+  following     Follow[]    @relation("UserFollowing")
 
   @@map("Users")
 }
 
 model Climb {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  title          String   @unique
-  description    String?
-  ratingAverage  Float
-  grade          String
-  gradeAverage   Float
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  title         String   @unique
+  description   String?
+  ratingAverage Float
+  grade         String
+  gradeAverage  Float
+  tags          String[]
+
   likesCount     Int      @default(0)
   commentsCount  Int      @default(0)
   recentLikes    String[] @default([]) @db.ObjectId
@@ -57,11 +61,9 @@ model Climb {
   // Relationships
   ascensions    Ascension[]
   likes         Like[]
-  tags          String[]
-  status        String?
-  createdBy     String      @db.ObjectId
-  createdByUser User        @relation("UserCreates", fields: [createdBy], references: [id])
   comments      Comment[]
+  createdBy     String      @db.ObjectId
+  createdByUser User        @relation("UserCreates", fields: [createdBy], references: [id], onDelete: Cascade)
 
   // Indexing for performance
   @@index([tags])
@@ -83,8 +85,8 @@ model Ascension {
   deletedAt DateTime?
 
   // Relationships
-  user     User      @relation(fields: [userId], references: [id])
-  climb    Climb     @relation(fields: [climbId], references: [id])
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  climb    Climb     @relation(fields: [climbId], references: [id], onDelete: Cascade)
   comments Comment[]
 
   // Indexing for performance
@@ -105,8 +107,8 @@ model Like {
   deletedAt DateTime?
 
   // Relationships
-  user  User  @relation(fields: [userId], references: [id])
-  climb Climb @relation(fields: [climbId], references: [id])
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  climb Climb @relation(fields: [climbId], references: [id], onDelete: Cascade)
 
   // Indexing for performance
   @@index([userId, climbId])
@@ -120,16 +122,16 @@ model Comment {
   content   String
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  deletedAt DateTime? 
+  deletedAt DateTime?
 
   userId      String  @db.ObjectId
   climbId     String  @db.ObjectId
   ascensionId String? @db.ObjectId
 
   // Relationships
-  user      User       @relation(fields: [userId], references: [id])
-  climb     Climb      @relation(fields: [climbId], references: [id])
-  ascension Ascension? @relation(fields: [ascensionId], references: [id])
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  climb     Climb      @relation(fields: [climbId], references: [id], onDelete: Cascade)
+  ascension Ascension? @relation(fields: [ascensionId], references: [id], onDelete: Cascade)
 
   // Indexing for performance
   @@index([userId, climbId])
@@ -137,4 +139,19 @@ model Comment {
   @@index([createdAt])
   @@index([deletedAt])
   @@map("Comments")
+}
+
+model Follow {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  follower   String   @db.ObjectId
+  following  String   @db.ObjectId
+  followedAt DateTime @default(now())
+
+  // Relationships
+  followerUser  User @relation("UserFollowers", fields: [follower], references: [id], onDelete: Cascade)
+  followingUser User @relation("UserFollowing", fields: [following], references: [id], onDelete: Cascade)
+
+  // Indexing for efficiency
+  @@index([follower, following])
+  @@map("Follows")
 }

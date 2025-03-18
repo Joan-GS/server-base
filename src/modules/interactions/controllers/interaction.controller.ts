@@ -7,6 +7,8 @@ import {
     UseGuards,
     HttpException,
     HttpStatus,
+    Get,
+    Query,
 } from "@nestjs/common";
 import { Like, Ascension, Comment } from "@prisma/client";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
@@ -17,9 +19,10 @@ import { Roles } from "../../auth/decorators/roles.decorator";
 import { Role } from "../../auth/utils/role.enum";
 import { RolesGuard } from "../../auth/utils/roles.guard";
 import { ClimbService } from "../../climbs/services/climb.service";
+import { FollowService } from "../services/follow.service";
 
-@ApiTags("likes, ascensions, comments")
-@Controller("climbs")
+@ApiTags("likes, ascensions, comments, followers")
+@Controller("interactions")
 @Roles(Role.User)
 @UseGuards(RolesGuard)
 export class InteractionController {
@@ -27,7 +30,8 @@ export class InteractionController {
         private readonly climbService: ClimbService,
         private readonly likeService: LikeService,
         private readonly ascensionService: AscensionService,
-        private readonly commentService: CommentService
+        private readonly commentService: CommentService,
+        private readonly followService: FollowService
     ) {}
 
     /**
@@ -79,6 +83,40 @@ export class InteractionController {
             );
         }
     }
+
+    /**
+     * GET /climbs/:climbId/isLiked?userId=123
+     *
+     * @param climbId - ID del climb
+     * @param userId - ID del usuario (desde query params)
+     * @returns { isLiked: boolean }
+     */
+    @Get(":climbId/isLiked")
+    @ApiOperation({ summary: "Check if user liked a climb" })
+    async isLiked(
+        @Param("climbId") climbId: string,
+        @Query("userId") userId: string
+    ): Promise<{ isLiked: boolean }> {
+        try {
+            console.log(climbId, userId);
+    
+            if (!userId) {
+                throw new HttpException(
+                    "User ID is required",
+                    HttpStatus.BAD_REQUEST
+                );
+            }
+    
+            const isLiked = await this.likeService.isLiked(climbId, userId);
+            return { isLiked };
+        } catch (error) {
+            throw new HttpException(
+                error.message || "Error checking like status",
+                HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+    
 
     /**
      * POST /climbs/:climbId/comment - Add a comment to a climb
@@ -157,5 +195,49 @@ export class InteractionController {
                 HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
+    }
+
+    @Post(":userId/follow")
+    @ApiOperation({ summary: "Follow a user" })
+    async followUser(
+        @Param("userId") userId: string,
+        @Body() data: { followerId: string }
+    ) {
+        try {
+            return await this.followService.followUser(data.followerId, userId);
+        } catch (error) {
+            throw new HttpException(
+                error.message || "Error following user",
+                HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    @Delete(":userId/unfollow")
+    @ApiOperation({ summary: "Unfollow a user" })
+    async unfollowUser(
+        @Param("userId") userId: string,
+        @Body() data: { followerId: string }
+    ) {
+        try {
+            return await this.followService.unfollowUser(data.followerId, userId);
+        } catch (error) {
+            throw new HttpException(
+                error.message || "Error unfollowing user",
+                HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    @Get(":userId/followers")
+    @ApiOperation({ summary: "Get a user's followers" })
+    async getFollowers(@Param("userId") userId: string) {
+        return this.followService.getFollowers(userId);
+    }
+
+    @Get(":userId/following")
+    @ApiOperation({ summary: "Get a user's following list" })
+    async getFollowing(@Param("userId") userId: string) {
+        return this.followService.getFollowing(userId);
     }
 }
