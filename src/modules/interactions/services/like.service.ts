@@ -62,10 +62,6 @@ export class LikeService {
 
             if (!like) throw new Error("Like not found");
 
-            console.log("Recent Likes Before Filter:", climb.recentLikes);
-console.log("User ID to Remove:", userId);
-
-
             // Remove the user from the recent likes array
             const updatedLikes = climb.recentLikes.filter(
                 (id) => id !== userId
