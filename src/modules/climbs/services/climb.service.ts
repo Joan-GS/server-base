@@ -46,35 +46,39 @@ export class ClimbService {
     }
 
     // List climbs with pagination and filters
-    async list(page: number, pageSize: number, filters?: string) {
+    async list(page: number, pageSize: number, filters?: string, userId?: string) {
         const skip = (page - 1) * pageSize;
         const take = Number(pageSize);
         const where = this.parseFilters(filters);
-
-        // Use transaction to perform both queries simultaneously
+    
         const [climbs, total] = await this.prismaService.$transaction([
             this.prismaService.climb.findMany({
                 where,
                 skip,
                 take,
                 include: {
-                    ascensions: true, // Include ascensions in the response
-                    likes: true, // Include likes in the response
-                    comments: true, // Include comments in the response
+                    likes: { select: { userId: true } }, // Solo traer userId de los likes
+                    ascensions: true,
+                    comments: true,
                 },
             }),
-            this.prismaService.climb.count({
-                where,
-            }),
+            this.prismaService.climb.count({ where }),
         ]);
-
+    
+        // Agregar isLiked basado en el usuario autenticado
+        const climbsWithIsLiked = climbs.map((climb) => ({
+            ...climb,
+            isLiked: userId ? climb.likes.some((like) => like.userId === userId) : false,
+        }));
+    
         return {
-            data: climbs,
+            data: climbsWithIsLiked,
             total,
             page,
             pageSize,
         };
     }
+    
 
     // Find a climb by its ID
     async findOne(id: string) {

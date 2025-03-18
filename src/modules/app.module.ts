@@ -15,6 +15,6 @@ import { InteractionModule } from './interactions/interaction.module';
         ClimbModule,
         InteractionModule,
         MailerModule
-    ]
+    ],
 })
 export class ApplicationModule {}

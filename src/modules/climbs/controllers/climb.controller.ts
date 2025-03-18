@@ -9,6 +9,8 @@ import {
     NotFoundException,
     Query,
     UseGuards,
+    Headers,
+    UnauthorizedException,
 } from "@nestjs/common";
 import { Prisma, Climb } from "@prisma/client";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
@@ -18,13 +20,17 @@ import { Roles } from "../../auth/decorators/roles.decorator";
 import { Role } from "../../auth/utils/role.enum";
 import { RolesGuard } from "../../auth/utils/roles.guard";
 import { PaginationResponse } from "../../../utils/generic.types.utils";
+import { AuthService } from "../../auth/services/auth.service";
 
 @ApiTags("climbs")
 @Controller("climbs")
 @Roles(Role.User)
 @UseGuards(RolesGuard)
 export class ClimbController {
-    constructor(private readonly climbService: ClimbService) {}
+    constructor(
+        private readonly authService: AuthService,
+        private readonly climbService: ClimbService
+    ) {}
 
     /************
      ** METHODS **
@@ -56,9 +62,17 @@ export class ClimbController {
     async list(
         @Query("page") page: number = 1,
         @Query("pageSize") pageSize: number = 10,
-        @Query("filters") filters?: string
+        @Query("filters") filters?: string,
+        @Headers("authorization") authorization?: string
     ): Promise<PaginationResponse<Climb>> {
-        return this.climbService.list(page, pageSize, filters);
+        if (!authorization) {
+            throw new UnauthorizedException("Missing authorization header");
+        }
+
+        const token = authorization.split(" ")[1];
+
+        const user = await this.authService.me(token);
+        return this.climbService.list(page, pageSize, filters, user.id);
     }
 
     /**
@@ -82,7 +96,9 @@ export class ClimbController {
      */
     @Post()
     @ApiOperation({ summary: "Create a new climb" })
-    async create(@Body(ClimbPipe) data: Prisma.ClimbCreateInput): Promise<Climb> {
+    async create(
+        @Body(ClimbPipe) data: Prisma.ClimbCreateInput
+    ): Promise<Climb> {
         return this.climbService.create(data);
     }
 
