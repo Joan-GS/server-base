@@ -17,14 +17,14 @@ import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { ClimbService } from "../services/climb.service";
 import { ClimbPipe } from "../flow/climb.pipe";
 import { Roles } from "../../auth/decorators/roles.decorator";
-import { Role } from "../../auth/utils/role.enum";
 import { RolesGuard } from "../../auth/utils/roles.guard";
 import { PaginationResponse } from "../../../utils/generic.types.utils";
 import { AuthService } from "../../auth/services/auth.service";
+import { ROLE } from "@joan16/shared-base";
 
 @ApiTags("climbs")
 @Controller("climbs")
-@Roles(Role.User)
+@Roles(ROLE.USER)
 @UseGuards(RolesGuard)
 export class ClimbController {
     constructor(

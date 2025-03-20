@@ -15,12 +15,13 @@
     "build": "npm run clean && tsc",
     "test": "env-cmd -f .env jest --config=jest.json",
     "lint": "eslint -c .eslintrc.js --ext .ts 'src/**/*.ts'",
-    "debug": "node dist/server.js"
+    "debug": "node dist/server.js",
+    "link:core": "npm link @joan16/shared-base"
   },
   "dependencies": {
     "@fastify/helmet": "^11.1.1",
     "@fastify/static": "^6.12.0",
-    "@joan16/shared-base": "^1.0.1",
+    "@joan16/shared-base": "^1.0.4",
     "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/common": "^10.3.0",
     "@nestjs/core": "^10.3.0",

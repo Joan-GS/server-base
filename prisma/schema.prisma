@@ -22,6 +22,7 @@ model User {
   roles            String?
   isVerified       Boolean   @default(false)
   verificationCode String?   @unique
+  language         String?   @default("en")
 
   // Time tracking fields
   createdAt DateTime  @default(now())
@@ -35,8 +36,27 @@ model User {
   comments      Comment[]
   followers     Follow[]    @relation("UserFollowers")
   following     Follow[]    @relation("UserFollowing")
+  UserStats     UserStats?
 
   @@map("Users")
+}
+
+// UserStats model for storing user climbing statistics
+model UserStats {
+  id                 String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId             String  @unique @db.ObjectId
+  ascensionsCount    Int     @default(0)
+  climbsCreatedCount Int     @default(0)
+  averageGrade       String?
+  hardestAscension   String?
+  favoriteTag        String?
+
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("UserStats")
 }
 
 model Climb {
@@ -75,10 +95,11 @@ model Climb {
 }
 
 model Ascension {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId     String   @db.ObjectId
-  climbId    String   @db.ObjectId
-  ascendedAt DateTime @default(now())
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @db.ObjectId
+  climbId       String   @db.ObjectId
+  ascensionType String
+  ascendedAt    DateTime @default(now())
 
   // Time tracking fields
   createdAt DateTime  @default(now())

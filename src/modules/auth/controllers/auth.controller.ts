@@ -9,8 +9,8 @@ import {
 import { AuthService } from "../services/auth.service";
 import { Prisma, User } from "@prisma/client";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
-import { Role } from "../utils/role.enum";
 import { Public } from "../decorators/public.decorator";
+import { ROLE } from "@joan16/shared-base";
 
 @ApiTags("auth")
 @Controller("auth")
@@ -86,7 +86,7 @@ export class AuthController {
             throw new BadRequestException("Email and password are required");
         }
         // Set default role to 'User'
-        data.roles = Role.User;
+        data.roles = ROLE.USER;
         // Generate a verification code
         const verificationCode =
             await this.authService.generateVerificationCode();

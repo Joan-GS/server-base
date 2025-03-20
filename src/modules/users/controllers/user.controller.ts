@@ -15,13 +15,13 @@ import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { UserService } from "../services/user.service";
 import { UserPipe } from "../flow/user.pipe";
 import { Roles } from "../../auth/decorators/roles.decorator";
-import { Role } from "../../auth/utils/role.enum";
 import { RolesGuard } from "../../auth/utils/roles.guard";
 import { PaginationResponse } from "../../../utils/generic.types.utils";
+import { ROLE } from "@joan16/shared-base";
 
 @ApiTags("users")
 @Controller("users")
-@Roles(Role.Admin)
+@Roles(ROLE.ADMIN)
 @UseGuards(RolesGuard)
 export class UserController {
     constructor(private readonly userService: UserService) {}

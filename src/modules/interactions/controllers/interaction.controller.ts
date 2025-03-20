@@ -16,14 +16,14 @@ import { LikeService } from "../services/like.service";
 import { AscensionService } from "../services/ascension.service";
 import { CommentService } from "../services/comment.service";
 import { Roles } from "../../auth/decorators/roles.decorator";
-import { Role } from "../../auth/utils/role.enum";
 import { RolesGuard } from "../../auth/utils/roles.guard";
 import { ClimbService } from "../../climbs/services/climb.service";
 import { FollowService } from "../services/follow.service";
+import { ASCENSION_TYPE, ROLE } from "@joan16/shared-base";
 
 @ApiTags("likes, ascensions, comments, followers")
 @Controller("interactions")
-@Roles(Role.User)
+@Roles(ROLE.USER)
 @UseGuards(RolesGuard)
 export class InteractionController {
     constructor(
@@ -184,11 +184,11 @@ export class InteractionController {
     @ApiOperation({ summary: "Ascend a climb" })
     async ascendClimb(
         @Param("climbId") climbId: string,
-        @Body() data: { userId: string }
+        @Body() data: { userId: string, ascensionType: ASCENSION_TYPE }
     ): Promise<Ascension> {
         try {
             await this.climbService.ensureClimbExists(climbId);
-            return await this.ascensionService.create(climbId, data.userId);
+            return await this.ascensionService.create(climbId, data.userId, data.ascensionType);
         } catch (error) {
             throw new HttpException(
                 error.message || "Error ascending climb",
