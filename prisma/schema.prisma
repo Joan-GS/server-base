@@ -65,7 +65,7 @@ model Climb {
   description   String?
   ratingAverage Float
   grade         String
-  gradeAverage  Float
+  gradeAverage  String
   tags          String[]
   status        String   @default("open")
 
