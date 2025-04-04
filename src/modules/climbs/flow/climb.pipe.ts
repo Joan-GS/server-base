@@ -17,6 +17,8 @@ export class ClimbPipe extends JoiValidationPipe {
             recentLikes: Joi.array().items(Joi.string().pattern(/^[a-fA-F0-9]{24}$/)).max(5).default([]),
             recentComments: Joi.array().items(Joi.string().pattern(/^[a-fA-F0-9]{24}$/)).max(5).default([]),
             createdBy: Joi.string().required().pattern(/^[a-fA-F0-9]{24}$/),
+            bluetoothCode: Joi.string().trim().required(),
+            imageUrl: Joi.string().optional().uri(),
         });
     }
 }
