@@ -10,18 +10,26 @@ import { UserService } from "../../users/services/user.service";
 import { Prisma, User } from "@prisma/client";
 import { MailService } from "../../email/services/mail.service";
 import * as bcrypt from "bcrypt";
+import { ClimbService } from "../../climbs/services/climb.service";
+import { FollowService } from "../../interactions/services/follow.service";
+import { AscensionService } from "../../interactions/services/ascension.service";
 
 @Injectable()
 export class AuthService {
     public constructor(
         private readonly usersService: UserService,
+        private readonly followService: FollowService,
+        private readonly ascensionService: AscensionService,
         private readonly mailService: MailService,
-        private readonly jwtService: JwtService
+        private readonly jwtService: JwtService,
+        private readonly climbService: ClimbService
     ) {}
 
     async me(access_token: string) {
         // Decode the token to get the payload
-        const decoded = this.jwtService.decode(access_token) as { email: string };
+        const decoded = this.jwtService.decode(access_token) as {
+            email: string;
+        };
 
         // Check if the token was decoded correctly and contains the 'email' (subject) field
         if (!decoded?.email) {
@@ -30,11 +38,25 @@ export class AuthService {
 
         // Retrieve the user using the 'email' field (usually the user ID)
         const user = await this.usersService.findOne(decoded.email);
-
-        // Return the username of the user
+        if (!user) {
+            throw new UnauthorizedException("User not found");
+        }
+        const followers = await this.followService.getFollowers(user.id);
+        const following = await this.followService.getFollowing(user.id);
+        const ascensions = await this.ascensionService.getAscensions(user.id);
+        const myClimbs = await this.climbService.list(
+            1,
+            10,
+            `{"createdBy": "${user.id}"}`,
+            user.id
+        );
         return {
             id: user?.id,
-            username: user?.username, // Return the user's username
+            username: user?.username,
+            followers: followers,
+            following: following,
+            ascensions: ascensions,
+            myClimbs: myClimbs,
         };
     }
 

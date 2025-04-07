@@ -213,6 +213,12 @@ export class InteractionController {
         }
     }
 
+    @Get(":userId/ascensions")
+    @ApiOperation({ summary: "Get a ascensions  list" })
+    async getAscensions(@Param("userId") userId: string) {
+        return this.ascensionService.getAscensions(userId);
+    }
+
     @Delete(":userId/unfollow")
     @ApiOperation({ summary: "Unfollow a user" })
     async unfollowUser(

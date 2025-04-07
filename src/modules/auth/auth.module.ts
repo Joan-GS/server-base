@@ -6,6 +6,8 @@ import { UserModule } from "../users/users.module";
 import { APP_GUARD } from "@nestjs/core";
 import { AuthGuard } from "./security/auth.guard";
 import { MailModule } from "../email/email.module";
+import { ClimbModule } from "../climbs/climb.module";
+import { InteractionModule } from "../interactions/interaction.module";
 
 @Module({
     imports: [
@@ -16,6 +18,8 @@ import { MailModule } from "../email/email.module";
             signOptions: { expiresIn: "1 days" },
         }),
         MailModule,
+        ClimbModule,
+        InteractionModule,
     ],
     providers: [
         AuthService,

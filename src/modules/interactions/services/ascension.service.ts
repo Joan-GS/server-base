@@ -7,13 +7,23 @@ export class AscensionService {
     constructor(private readonly prismaService: PrismaService) {}
 
     // Create an ascension
-    async create(climbId: string, userId: string, ascensionType: ASCENSION_TYPE) {
+    async create(
+        climbId: string,
+        userId: string,
+        ascensionType: ASCENSION_TYPE
+    ) {
         return this.prismaService.ascension.create({
             data: {
                 climbId,
                 userId,
-                ascensionType
+                ascensionType,
             },
+        });
+    }
+
+    async getAscensions(userId: string) {
+        return this.prismaService.ascension.findMany({
+            where: { userId: userId },
         });
     }
 }

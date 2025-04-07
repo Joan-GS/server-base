@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { forwardRef, Module } from "@nestjs/common";
 import { CommonModule } from "../common";
 import { LikeService } from "./services/like.service";
 import { AscensionService } from "./services/ascension.service";
@@ -8,9 +8,9 @@ import { ClimbModule } from "../climbs/climb.module";
 import { FollowService } from "./services/follow.service";
 
 @Module({
-    imports: [CommonModule, ClimbModule],
+    imports: [CommonModule, forwardRef(() => ClimbModule)],
     providers: [LikeService, AscensionService, CommentService, FollowService],
     controllers: [InteractionController],
-    exports: [LikeService, AscensionService, CommentService],
+    exports: [LikeService, AscensionService, CommentService, FollowService],
 })
 export class InteractionModule {}

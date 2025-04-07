@@ -39,14 +39,14 @@ export class AuthController {
         const token = authorization.split(" ")[1]; // Extract the Bearer token
 
         // Use the auth service to decode the token and get user details
-        const user = await this.authService.me(token);
+        const data = await this.authService.me(token);
 
-        if (!user) {
-            throw new BadRequestException("User not found or invalid token");
+        if (!data) {
+            throw new BadRequestException("Data not found or invalid token");
         }
 
         return {
-            username: user.username, // Return the username of the authenticated user
+            ...data
         };
     }
 
