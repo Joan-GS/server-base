@@ -76,7 +76,7 @@ export class UserService {
      */
     async update(id: string, data: Prisma.UserUpdateInput) {
         return this.prismaService.user.update({
-            where: { id },
+            where: { email: id },
             data,
         });
     }

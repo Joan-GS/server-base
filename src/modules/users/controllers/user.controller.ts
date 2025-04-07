@@ -93,6 +93,7 @@ export class UserController {
      * @returns Updated user
      * @throws NotFoundException if user is not found
      */
+    @Roles(ROLE.USER)
     @Put(":id")
     @ApiOperation({ summary: "Update an existing user by ID" })
     async update(
