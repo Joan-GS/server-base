@@ -50,6 +50,7 @@ export class UserController {
      * @param filters - Optional query filters
      * @returns Paginated list of users
      */
+    @Roles(ROLE.USER)
     @Get()
     @ApiOperation({ summary: "List users" })
     async list(
