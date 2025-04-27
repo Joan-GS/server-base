@@ -61,6 +61,48 @@ export class AuthService {
         };
     }
 
+    async getProfile(access_token: string, userId: string) {
+        // Decode who is making the request
+        const decoded = this.jwtService.decode(access_token) as { email: string; sub: string };
+    
+        if (!decoded?.sub) {
+            throw new UnauthorizedException("Invalid token");
+        }
+    
+        const currentUserId = decoded.sub;
+    
+        // Find the profile user
+        const user = await this.usersService.findOneId(userId);
+        if (!user) {
+            throw new NotFoundException("User not found");
+        }
+    
+        const followers = await this.followService.getFollowers(user.id);
+        const following = await this.followService.getFollowing(user.id);
+        const ascensions = await this.ascensionService.getAscensions(user.id);
+        const myClimbs = await this.climbService.list(
+            1,
+            10,
+            `{"createdBy": "${user.id}"}`,
+            user.id
+        );
+    
+        // Check if current user is following the profile user
+        const isFollowing = await this.followService.isFollowing(currentUserId, user.id);
+    
+        return {
+            id: user?.id,
+            email: user?.email,
+            username: user?.username,
+            followers,
+            following,
+            ascensions,
+            myClimbs,
+            isFollowing,
+        };
+    }
+    
+
     async signIn(email: string, pass: string) {
         const user = await this.usersService.findOne(email);
 

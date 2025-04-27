@@ -5,6 +5,7 @@ import {
     Get,
     Post,
     Headers,
+    Param,
 } from "@nestjs/common";
 import { AuthService } from "../services/auth.service";
 import { Prisma, User } from "@prisma/client";
@@ -46,8 +47,38 @@ export class AuthController {
         }
 
         return {
-            ...data
+            ...data,
         };
+    }
+
+    /**
+     * POST /auth/profile - Get the profile of another user
+     *
+     * @param authorization - The current user's access token in headers
+     * @param body - An object containing the profileId of the user to view
+     * @returns Profile info + isFollowing boolean
+     */
+    @Get("profile/:id")
+    @ApiOperation({ summary: "Get another user's profile" })
+    async getProfile(
+        @Headers("authorization") authorization: string,
+        @Param("id") id: string
+    ) {
+        if (!authorization) {
+            throw new BadRequestException("Authorization token is required");
+        }
+        const token = authorization.split(" ")[1];
+
+        if (!id) {
+            throw new BadRequestException("id is required");
+        }
+
+        const profileData = await this.authService.getProfile(
+            token,
+            id
+        );
+
+        return profileData;
     }
 
     /**

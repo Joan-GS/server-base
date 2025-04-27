@@ -9,6 +9,8 @@ import {
     NotFoundException,
     Query,
     UseGuards,
+    Headers,
+    BadRequestException,
 } from "@nestjs/common";
 import { Prisma, User } from "@prisma/client";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
@@ -54,11 +56,17 @@ export class UserController {
     @Get()
     @ApiOperation({ summary: "List users" })
     async list(
+        @Headers("authorization") authorization: string,
         @Query("page") page: number = 1,
         @Query("pageSize") pageSize: number = 10,
         @Query("filters") filters?: string
     ): Promise<PaginationResponse<User>> {
-        return this.userService.list(page, pageSize, filters);
+        if (!authorization) {
+            throw new BadRequestException("Authorization token is required");
+        }
+
+        const token = authorization.split(" ")[1]; // Extract the Bearer token
+        return this.userService.list(token, page, pageSize, filters);
     }
 
     /**

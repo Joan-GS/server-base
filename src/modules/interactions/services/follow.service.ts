@@ -50,4 +50,15 @@ export class FollowService {
             include: { followingUser: true },
         });
     }
+
+    async isFollowing(followerId: string, followingId: string): Promise<boolean> {
+        const follow = await this.prismaService.follow.findFirst({
+            where: {
+                follower: followerId,
+                following: followingId,
+            },
+        });
+        return !!follow;
+    }
+    
 }
