@@ -1,129 +1,71 @@
-import {
-    Controller,
-    Get,
-    Post,
-    Put,
-    Delete,
-    Param,
-    Body,
-    NotFoundException,
-    Query,
-    UseGuards,
-    Headers,
-    BadRequestException,
-} from "@nestjs/common";
-import { Prisma, User } from "@prisma/client";
-import { ApiTags, ApiOperation } from "@nestjs/swagger";
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, ParseIntPipe } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { UserService } from "../services/user.service";
-import { UserPipe } from "../flow/user.pipe";
+import { UserPipe, UserUpdatePipe } from "../flow/user.pipe";
 import { Roles } from "../../auth/decorators/roles.decorator";
 import { RolesGuard } from "../../auth/utils/roles.guard";
 import { PaginationResponse } from "../../../utils/generic.types.utils";
 import { ROLE } from "@joan16/shared-base";
+import { Prisma, User } from "@prisma/client";
+import { CurrentUser } from "../../auth/decorators/current-user.decorator";
 
 @ApiTags("users")
 @Controller("users")
-@Roles(ROLE.ADMIN)
+@Roles(ROLE.USER)
 @UseGuards(RolesGuard)
 export class UserController {
-    constructor(private readonly userService: UserService) {}
+    constructor(private readonly userService: UserService) { }
 
-    /************
-     ** METHODS **
-     *************/
-
-    public async ensureUserExists(id: string): Promise<User> {
-        const user = await this.userService.findOne(id);
-        if (!user) {
-            throw new NotFoundException(`User with id ${id} not found`);
-        }
-        return user;
-    }
-
-    /************
-     ** ACTIONS **
-     *************/
-
-    /**
-     * GET /users - List users with pagination and filters
-     *
-     * @param page - Page number (default: 1)
-     * @param pageSize - Items per page (default: 10)
-     * @param filters - Optional query filters
-     * @returns Paginated list of users
-     */
-    @Roles(ROLE.USER)
     @Get()
     @ApiOperation({ summary: "List users" })
+    @ApiResponse({ status: 200, description: 'Users retrieved successfully' })
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
     async list(
-        @Headers("authorization") authorization: string,
-        @Query("page") page: number = 1,
-        @Query("pageSize") pageSize: number = 10,
+        @CurrentUser() currentUser: { sub: string },
+        @Query("page", new ParseIntPipe()) page: number = 1,  // ← Convierte a número
+        @Query("pageSize", new ParseIntPipe()) pageSize: number = 10, // ← Convierte a número
         @Query("filters") filters?: string
     ): Promise<PaginationResponse<User>> {
-        if (!authorization) {
-            throw new BadRequestException("Authorization token is required");
-        }
-
-        const token = authorization.split(" ")[1]; // Extract the Bearer token
-        return this.userService.list(token, page, pageSize, filters);
+        return this.userService.list(currentUser.sub, page, pageSize, filters);
     }
 
-    /**
-     * GET /users/:id - Retrieve a user by ID
-     *
-     * @param id - User ID
-     * @returns User data
-     * @throws NotFoundException if user is not found
-     */
     @Get(":id")
     @ApiOperation({ summary: "Get a user by ID" })
+    @ApiResponse({ status: 200, description: 'User retrieved successfully' })
+    @ApiResponse({ status: 400, description: 'Invalid ID format' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 404, description: 'User not found' })
     async findOne(@Param("id") id: string): Promise<User> {
-        return this.ensureUserExists(id);
+        return this.userService.findById(id);
     }
 
-    /**
-     * POST /users - Create a new user
-     *
-     * @param data - User data
-     * @returns Created user
-     */
     @Post()
     @ApiOperation({ summary: "Create a new user" })
+    @ApiResponse({ status: 201, description: 'User created successfully' })
+    @ApiResponse({ status: 400, description: 'Invalid user data' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 409, description: 'User already exists' })
     async create(@Body(UserPipe) data: Prisma.UserCreateInput): Promise<User> {
         return this.userService.create(data);
     }
 
-    /**
-     * PUT /users/:id - Update an existing user
-     *
-     * @param id - User ID
-     * @param data - Updated user data
-     * @returns Updated user
-     * @throws NotFoundException if user is not found
-     */
-    @Roles(ROLE.USER)
     @Put(":id")
     @ApiOperation({ summary: "Update an existing user by ID" })
-    async update(
-        @Param("id") id: string,
-        @Body() data: Prisma.UserUpdateInput
-    ): Promise<User> {
-        await this.ensureUserExists(id);
+    @ApiResponse({ status: 200, description: 'User updated successfully' })
+    @ApiResponse({ status: 400, description: 'Invalid user data' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 404, description: 'User not found' })
+    async update(@Param("id") id: string, @Body(UserUpdatePipe) data: Prisma.UserUpdateInput): Promise<User> {
         return this.userService.update(id, data);
     }
 
-    /**
-     * DELETE /users/:id - Delete a user
-     *
-     * @param id - User ID
-     * @returns Deleted user
-     * @throws NotFoundException if user is not found
-     */
     @Delete(":id")
     @ApiOperation({ summary: "Delete a user by ID" })
+    @ApiResponse({ status: 200, description: 'User deleted successfully' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 404, description: 'User not found' })
     async delete(@Param("id") id: string): Promise<User> {
-        await this.ensureUserExists(id);
         return this.userService.delete(id);
     }
 }

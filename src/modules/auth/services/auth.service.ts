@@ -37,7 +37,7 @@ export class AuthService {
         }
 
         // Retrieve the user using the 'email' field (usually the user ID)
-        const user = await this.usersService.findOne(decoded.email);
+        const user = await this.usersService.findByEmail(decoded.email);
         if (!user) {
             throw new UnauthorizedException("User not found");
         }
@@ -72,7 +72,7 @@ export class AuthService {
         const currentUserId = decoded.sub;
     
         // Find the profile user
-        const user = await this.usersService.findOneId(userId);
+        const user = await this.usersService.findById(userId);
         if (!user) {
             throw new NotFoundException("User not found");
         }
@@ -104,7 +104,7 @@ export class AuthService {
     
 
     async signIn(email: string, pass: string) {
-        const user = await this.usersService.findOne(email);
+        const user = await this.usersService.findByEmail(email);
 
         // Ensure user exists and passwords match using bcrypt
         if (!user || !(await bcrypt.compare(pass, user.password))) {
@@ -132,7 +132,6 @@ export class AuthService {
         });
 
         return {
-            success: true,
             access_token,
             refresh_token,
         };
@@ -143,7 +142,7 @@ export class AuthService {
         verificationCode: string
     ): Promise<User> {
         // Check if the user already exists
-        const existingUser = await this.usersService.findOne(data.email);
+        const existingUser = await this.usersService.findByEmail(data.email);
         if (existingUser) {
             throw new ConflictException("User already exists");
         }
@@ -216,7 +215,7 @@ export class AuthService {
 
     // Buscar usuario por email
     async findUserByEmail(email: string): Promise<User> {
-        const user = await this.usersService.findOne(email);
+        const user = await this.usersService.findByEmail(email);
         if (!user) {
             throw new NotFoundException("User not found");
         }

@@ -8,6 +8,8 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 
 import { ApplicationModule } from "./modules/app.module";
 import { CommonModule, LogInterceptor } from "./modules/common";
+import { ApiResponseInterceptor } from "./modules/common/flow/api-response.interceptor";
+import { AllExceptionsFilter } from "./modules/common/filters/http-exception.filter";
 
 /**
  * These are API defaults that can be changed using environment variables,
@@ -67,7 +69,10 @@ async function bootstrap(): Promise<void> {
     }
 
     const logInterceptor = app.select(CommonModule).get(LogInterceptor);
-    app.useGlobalInterceptors(logInterceptor);
+    const apiResponseInterceptor = app.select(CommonModule).get(ApiResponseInterceptor)
+    app.useGlobalInterceptors(logInterceptor, apiResponseInterceptor);
+    app.useGlobalFilters(new AllExceptionsFilter());
+
 
     app.enableCors({
         origin: '*', // Or use a specific domain like 'http://localhost:8081' if you want to restrict it

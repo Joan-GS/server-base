@@ -24,3 +24,24 @@ export class UserPipe extends JoiValidationPipe {
         });
     }
 }
+
+export class UserUpdatePipe extends JoiValidationPipe {
+    public buildSchema(): Joi.Schema {
+        return Joi.object<Prisma.UserUpdateInput>({
+            username: Joi.string().trim().min(2).max(50).optional(),
+            email: Joi.string().trim().email().optional(),
+            password: Joi.string().min(8).optional(),
+            birthDate: Joi.date().iso().optional(),
+            gender: Joi.string()
+                .valid(...Object.values(GENDER))
+                .optional(),
+            profileImage: Joi.string().uri().optional(),
+            roles: Joi.string()
+                .valid(...Object.values(ROLE))
+                .optional(),
+            language: Joi.string()
+                .valid(...Object.values(LANGUAGE))
+                .optional(),
+        });
+    }
+}

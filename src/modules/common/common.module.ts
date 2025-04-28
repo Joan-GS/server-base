@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TerminusModule } from '@nestjs/terminus';
 
 import { HealthController } from './controller';
-import { LogInterceptor } from './flow';
+import { LogInterceptor, ApiResponseInterceptor } from './flow';
 import {  LoggerService, PrismaService } from './provider';
 
 @Module({
@@ -12,6 +12,7 @@ import {  LoggerService, PrismaService } from './provider';
     providers: [
         LoggerService,
         LogInterceptor,
+        ApiResponseInterceptor,
         PrismaService,
     ],
     exports: [

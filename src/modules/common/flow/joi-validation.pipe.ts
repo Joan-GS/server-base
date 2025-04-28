@@ -6,8 +6,9 @@ export abstract class JoiValidationPipe implements PipeTransform<unknown> {
 
     public transform(value: unknown): unknown {
 
-        const result = this.buildSchema().validate(value);
-
+        const result = this.buildSchema().validate(value, {
+            abortEarly: false,
+        });
         if (result.error) {
             throw new HttpException({
                 message: 'Validation failed',
