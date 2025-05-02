@@ -3,11 +3,11 @@ import { Prisma, User } from '@prisma/client';
 import { PrismaService } from '../../common';
 import { FollowService } from '../../interactions/services/follow.service';
 import {
-    UserNotFoundException,
-    UserAlreadyExistsException,
-    InvalidIdFormatException,
-    InvalidFiltersException,
-} from '../flow/user.errors';
+    AlreadyExistsException,
+    InvalidFormatException,
+    NotFoundException,
+} from '../../common/flow/generic.errors';
+import { GenericHelpers } from '../../common/flow/helpers';
 
 @Injectable()
 export class UserService {
@@ -30,15 +30,23 @@ export class UserService {
         pageSize: number = 10,
         filters?: string,
     ) {
-        await this.verifyUserExists(currentUserId);
+        // Verify user exists using generic helper
+        await GenericHelpers.verifyEntityExists(
+            (id) => this.prisma.user.findUnique({ where: { id } }),
+            'User',
+            currentUserId
+        );
+
+        // Parse filters using generic helper
+        const where = GenericHelpers.parseFilters<Prisma.UserWhereInput>(filters);
 
         const [users, total] = await this.prisma.$transaction([
             this.prisma.user.findMany({
                 skip: (page - 1) * pageSize,
                 take: pageSize,
-                where: this.parseFilters(filters),
+                where,
             }),
-            this.prisma.user.count({ where: this.parseFilters(filters) }),
+            this.prisma.user.count({ where }),
         ]);
 
         const data = await this.addFollowingStatus(users, currentUserId);
@@ -50,16 +58,17 @@ export class UserService {
      * Finds a user by ID with proper validation
      * @param id User ID (must be valid MongoDB ObjectId)
      * @returns User entity
-     * @throws UserNotFoundException if user doesn't exist
-     * @throws InvalidIdFormatException if ID format is invalid
+     * @throws NotFoundException if user doesn't exist
+     * @throws InvalidFormatException if ID format is invalid
      */
     async findById(id: string): Promise<User> {
-        if (!this.isValidId(id)) {
-            throw new InvalidIdFormatException(id);
+        // ID validation using generic helper
+        if (!GenericHelpers.isValidMongoId(id)) {
+            throw new InvalidFormatException('ID', id);
         }
 
         const user = await this.prisma.user.findUnique({ where: { id } });
-        if (!user) throw new UserNotFoundException(id);
+        if (!user) throw new NotFoundException('User', id);
         return user;
     }
 
@@ -67,11 +76,11 @@ export class UserService {
      * Finds a user by email with validation
      * @param email Valid email address
      * @returns User entity
-     * @throws UserNotFoundException if user doesn't exist
+     * @throws NotFoundException if user doesn't exist
      */
     async findByEmail(email: string): Promise<User> {
         const user = await this.prisma.user.findUnique({ where: { email } });
-        if (!user) throw new UserNotFoundException(email);
+        if (!user) throw new NotFoundException('User', email);
         return user;
     }
 
@@ -79,13 +88,13 @@ export class UserService {
      * Finds a user by verification code
      * @param code Verification token
      * @returns User entity
-     * @throws UserNotFoundException if user doesn't exist
+     * @throws NotFoundException if user doesn't exist
      */
     async findByVerificationToken(code: string) {
         const user = await this.prisma.user.findUnique({
             where: { verificationCode: code }
         });
-        if (!user) throw new UserNotFoundException('with this verification code');
+        if (!user) throw new NotFoundException('User', 'with this verification code');
         return user;
     }
 
@@ -93,11 +102,11 @@ export class UserService {
      * Creates a new user with validation
      * @param data User creation data
      * @returns Created user
-     * @throws UserAlreadyExistsException if email already registered
+     * @throws AlreadyExistsException if email already registered
      */
     async create(data: Prisma.UserCreateInput): Promise<User> {
         if (await this.prisma.user.findUnique({ where: { email: data.email } })) {
-            throw new UserAlreadyExistsException(data.email);
+            throw new AlreadyExistsException('User', 'email', data.email);
         }
         return this.prisma.user.create({ data });
     }
@@ -107,10 +116,16 @@ export class UserService {
      * @param id Valid user ID
      * @param data User update data
      * @returns Updated user
-     * @throws UserNotFoundException if user doesn't exist
+     * @throws NotFoundException if user doesn't exist
      */
     async update(id: string, data: Prisma.UserUpdateInput): Promise<User> {
-        await this.verifyUserExists(id);
+        // Verify exists using generic helper
+        await GenericHelpers.verifyEntityExists(
+            (id) => this.prisma.user.findUnique({ where: { id } }),
+            'User',
+            id
+        );
+
         return this.prisma.user.update({ where: { id }, data });
     }
 
@@ -118,29 +133,27 @@ export class UserService {
      * Deletes a user
      * @param id Valid user ID
      * @returns Deleted user
-     * @throws UserNotFoundException if user doesn't exist
+     * @throws NotFoundException if user doesn't exist
      */
     async delete(id: string): Promise<User> {
-        await this.verifyUserExists(id);
+        // Verify exists using generic helper
+        await GenericHelpers.verifyEntityExists(
+            (id) => this.prisma.user.findUnique({ where: { id } }),
+            'User',
+            id
+        );
+
         return this.prisma.user.delete({ where: { id } });
     }
 
     // ============ HELPER METHODS ============
 
-    private async verifyUserExists(id: string): Promise<void> {
-        if (!await this.findById(id)) {
-            throw new UserNotFoundException(id);
-        }
-    }
-
-    private parseFilters(filters?: string): Prisma.UserWhereInput {
-        try {
-            return filters ? JSON.parse(filters) : {};
-        } catch {
-            throw new InvalidFiltersException();
-        }
-    }
-
+    /**
+     * Adds following status to each user in the list
+     * @param users List of users
+     * @param currentUserId ID of the current authenticated user
+     * @returns List of users with following status
+     */
     private async addFollowingStatus(users: User[], currentUserId: string) {
         return Promise.all(users.map(async user => ({
             ...user,
@@ -148,9 +161,5 @@ export class UserService {
                 ? false
                 : await this.followService.isFollowing(currentUserId, user.id),
         })));
-    }
-
-    private isValidId(id: string): boolean {
-        return /^[0-9a-fA-F]{24}$/.test(id);
     }
 }

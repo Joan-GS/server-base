@@ -1,43 +1,47 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException, ConflictException } from "@nestjs/common";
 import { PrismaService } from "../../common";
+import { Prisma } from "@prisma/client";
+import { GenericHelpers } from "../../common/flow/helpers";
 
 @Injectable()
 export class LikeService {
-    constructor(private readonly prismaService: PrismaService) {}
+    constructor(private readonly prisma: PrismaService) { }
 
-    // Adds a like to a climb with a transaction
-    async create(climbId: string, userId: string) {
-        return this.prismaService.$transaction(async (prisma) => {
-            const climb = await prisma.climb.findUnique({
-                where: { id: climbId },
-                select: { recentLikes: true, likesCount: true },
-            });
 
-            if (!climb) throw new Error("Climb not found");
+    /**
+     * Creates a like for a climb by a user.
+     *
+     * @param climbId - The ID of the climb being liked
+     * @param userId - The ID of the user liking the climb
+     * @returns The created Like record
+     */
+    async create(climbId: string, userId: string): Promise<Prisma.LikeGetPayload<any>> {
+        await GenericHelpers.verifyEntityExists(
+            (id) => this.prisma.climb.findUnique({ where: { id } }),
+            'Climb',
+            climbId
+        );
 
-            // Prevent a user from liking more than once
-            const existingLike = await prisma.like.findFirst({
-                where: { climbId, userId },
-            });
+        const existingLike = await this.prisma.like.findFirst({
+            where: { climbId, userId },
+        });
 
-            if (existingLike) throw new Error("User already liked this climb");
+        if (existingLike) {
+            throw new ConflictException('User already liked this climb');
+        }
 
-            // Add the new user to the beginning of the array
-            let updatedLikes = [userId, ...climb.recentLikes];
-            if (updatedLikes.length > 5) {
-                updatedLikes = updatedLikes.slice(0, 5);
-            }
-
-            // Create the like and update the climb in the same transaction
-            const like = await prisma.like.create({
+        return this.prisma.$transaction(async (tx) => {
+            const like = await tx.like.create({
                 data: { climbId, userId },
             });
 
-            await prisma.climb.update({
+            await tx.climb.update({
                 where: { id: climbId },
                 data: {
-                    recentLikes: updatedLikes,
-                    likesCount: climb.likesCount + 1,
+                    recentLikes: {
+                        set: [userId, ...(await this.getRecentLikes(climbId, tx))],
+                    },
+                    likesCount: { increment: 1 },
                 },
             });
 
@@ -45,39 +49,51 @@ export class LikeService {
         });
     }
 
-    // Removes a like from a climb with a transaction
-    async remove(climbId: string, userId: string) {
-        return this.prismaService.$transaction(async (prisma) => {
-            const climb = await prisma.climb.findUnique({
-                where: { id: climbId },
-                select: { recentLikes: true, likesCount: true },
-            });
+    /**
+    * Retrieves the most recent user IDs who liked a climb.
+    *
+    * @param climbId - The ID of the climb
+    * @param tx - Prisma transaction client
+    * @returns A list of up to 4 recent user IDs who liked the climb
+    */
+    private async getRecentLikes(climbId: string, tx: Prisma.TransactionClient) {
+        const recent = await tx.like.findMany({
+            where: { climbId },
+            orderBy: { createdAt: 'desc' },
+            take: 4,
+            select: { userId: true },
+        });
+        return recent.map(like => like.userId);
+    }
 
-            if (!climb) throw new Error("Climb not found");
+    /**
+    * Removes a like from a climb by a user.
+    *
+    * @param climbId - The ID of the climb
+    * @param userId - The ID of the user who wants to remove the like
+    * @returns The deleted Like record
+    */
+    async remove(climbId: string, userId: string): Promise<Prisma.LikeGetPayload<any>> {
+        const like = await this.prisma.like.findFirst({
+            where: { climbId, userId },
+        });
 
-            // Find the like before deleting it
-            const like = await prisma.like.findFirst({
-                where: { climbId, userId },
-            });
+        if (!like) {
+            throw new NotFoundException('Like not found');
+        }
 
-            if (!like) throw new Error("Like not found");
-
-            // Remove the user from the recent likes array
-            const updatedLikes = climb.recentLikes.filter(
-                (id) => id !== userId
-            );
-
-            // Delete the like
-            await prisma.like.delete({
+        return this.prisma.$transaction(async (tx) => {
+            await tx.like.delete({
                 where: { id: like.id },
             });
 
-            // Update the climb
-            await prisma.climb.update({
+            await tx.climb.update({
                 where: { id: climbId },
                 data: {
-                    recentLikes: updatedLikes,
-                    likesCount: Math.max(0, climb.likesCount - 1),
+                    recentLikes: {
+                        set: (await this.getRecentLikes(climbId, tx)),
+                    },
+                    likesCount: { decrement: 1 },
                 },
             });
 
@@ -85,10 +101,16 @@ export class LikeService {
         });
     }
 
+    /**
+   * Checks whether a user has liked a specific climb.
+   *
+   * @param climbId - The ID of the climb
+   * @param userId - The ID of the user
+   * @returns True if the user has liked the climb, otherwise false
+   */
     async isLiked(climbId: string, userId: string): Promise<boolean> {
-        const existingLike = await this.prismaService.like.findFirst({
+        return !!(await this.prisma.like.findFirst({
             where: { climbId, userId },
-        });
-        return !!existingLike;
+        }));
     }
 }

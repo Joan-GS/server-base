@@ -1,249 +1,256 @@
-import {
-    Controller,
-    Post,
-    Delete,
-    Param,
-    Body,
-    UseGuards,
-    HttpException,
-    HttpStatus,
-    Get,
-    Query,
-} from "@nestjs/common";
+import { Controller, Post, Delete, Param, Body, UseGuards, Get, Query, DefaultValuePipe } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { Like, Ascension, Comment } from "@prisma/client";
-import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { LikeService } from "../services/like.service";
 import { AscensionService } from "../services/ascension.service";
 import { CommentService } from "../services/comment.service";
 import { Roles } from "../../auth/decorators/roles.decorator";
 import { RolesGuard } from "../../auth/utils/roles.guard";
-import { ClimbService } from "../../climbs/services/climb.service";
 import { FollowService } from "../services/follow.service";
 import { ASCENSION_TYPE, ROLE } from "@joan16/shared-base";
+import { CurrentUser } from "../../auth/decorators/current-user.decorator";
+import { ParseIntPipe } from "@nestjs/common";
+import { PaginationResponse } from "../../../utils/generic.types.utils";
 
-@ApiTags("likes, ascensions, comments, followers")
+@ApiTags("Interactions")
 @Controller("interactions")
 @Roles(ROLE.USER)
 @UseGuards(RolesGuard)
 export class InteractionController {
     constructor(
-        private readonly climbService: ClimbService,
         private readonly likeService: LikeService,
         private readonly ascensionService: AscensionService,
         private readonly commentService: CommentService,
         private readonly followService: FollowService
-    ) {}
+    ) { }
+
 
     /**
-     * POST /climbs/:climbId/like - Like a climb
+     * POST /interactions/:climbId/like - Like a climb
      *
      * @param climbId - ID of the climb to like
-     * @param data - Object containing userId
      * @returns The created Like object
      * @throws HttpException if climb does not exist or user already liked it
      */
     @Post(":climbId/like")
     @ApiOperation({ summary: "Like a climb" })
+    @ApiResponse({ status: 201, description: 'Like created successfully' })
+    @ApiResponse({ status: 400, description: 'Invalid input' })
+    @ApiResponse({ status: 404, description: 'Climb not found' })
+    @ApiResponse({ status: 409, description: 'Invalid input or already liked' })
     async likeClimb(
-        @Param("climbId") climbId: string,
-        @Body() data: { userId: string }
+        @CurrentUser() currentUser: { sub: string },
+        @Param("climbId") climbId: string
     ): Promise<Like> {
-        try {
-            await this.climbService.ensureClimbExists(climbId);
-            return await this.likeService.create(climbId, data.userId);
-        } catch (error) {
-            throw new HttpException(
-                error.message || "Error liking climb",
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
+        return this.likeService.create(climbId, currentUser.sub);
     }
 
+
     /**
-     * DELETE /climbs/:climbId/like - Remove like from a climb
+     * DELETE /interactions/:climbId/like - Remove like from a climb
      *
-     * @param climbId - ID of the climb
-     * @param data - Object containing userId
+     * @param climbId - ID of the climb to remove like from
      * @returns The removed Like object
-     * @throws HttpException if climb does not exist or like was not found
+     * @throws HttpException if climb or like does not exist
      */
     @Delete(":climbId/like")
     @ApiOperation({ summary: "Remove like from a climb" })
+    @ApiResponse({ status: 200, description: 'Like removed successfully' })
+    @ApiResponse({ status: 400, description: 'Invalid input' })
+    @ApiResponse({ status: 404, description: 'Like or climb not found' })
     async removeLike(
-        @Param("climbId") climbId: string,
-        @Body() data: { userId: string }
+        @CurrentUser() currentUser: { sub: string },
+        @Param("climbId") climbId: string
     ): Promise<Like> {
-        try {
-            await this.climbService.ensureClimbExists(climbId);
-            return await this.likeService.remove(climbId, data.userId);
-        } catch (error) {
-            throw new HttpException(
-                error.message || "Error removing like",
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
+        return this.likeService.remove(climbId, currentUser.sub);
     }
 
     /**
-     * GET /climbs/:climbId/isLiked?userId=123
-     *
-     * @param climbId - ID del climb
-     * @param userId - ID del usuario (desde query params)
-     * @returns { isLiked: boolean }
-     */
+    * GET /interactions/:climbId/isLiked - Check if user liked a climb
+    *
+    * @param climbId - ID of the climb
+    * @returns An object with boolean value { isLiked }
+    * @throws HttpException for invalid input
+    */
     @Get(":climbId/isLiked")
     @ApiOperation({ summary: "Check if user liked a climb" })
+    @ApiResponse({ status: 200, description: 'Like status retrieved' })
+    @ApiResponse({ status: 400, description: 'Invalid input' })
     async isLiked(
-        @Param("climbId") climbId: string,
-        @Query("userId") userId: string
+        @CurrentUser() currentUser: { sub: string },
+        @Param("climbId") climbId: string
     ): Promise<{ isLiked: boolean }> {
-        try {
-            console.log(climbId, userId);
-    
-            if (!userId) {
-                throw new HttpException(
-                    "User ID is required",
-                    HttpStatus.BAD_REQUEST
-                );
-            }
-    
-            const isLiked = await this.likeService.isLiked(climbId, userId);
-            return { isLiked };
-        } catch (error) {
-            throw new HttpException(
-                error.message || "Error checking like status",
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
+        return { isLiked: await this.likeService.isLiked(climbId, currentUser.sub) };
     }
-    
 
     /**
-     * POST /climbs/:climbId/comment - Add a comment to a climb
+     * POST /interactions/:climbId/comment - Comment on a climb
      *
      * @param climbId - ID of the climb
-     * @param data - Object containing userId and comment content
+     * @param content - Comment text
      * @returns The created Comment object
-     * @throws HttpException if climb does not exist
+     * @throws HttpException if climb does not exist or input is invalid
      */
     @Post(":climbId/comment")
     @ApiOperation({ summary: "Comment on a climb" })
+    @ApiResponse({ status: 201, description: 'Comment created successfully' })
+    @ApiResponse({ status: 400, description: 'Invalid input' })
+    @ApiResponse({ status: 404, description: 'Climb not found' })
     async commentOnClimb(
+        @CurrentUser() currentUser: { sub: string },
         @Param("climbId") climbId: string,
-        @Body() data: { userId: string; content: string }
+        @Body("content") content: string
     ): Promise<Comment> {
-        try {
-            await this.climbService.ensureClimbExists(climbId);
-            return await this.commentService.create(
-                climbId,
-                data.userId,
-                data.content
-            );
-        } catch (error) {
-            throw new HttpException(
-                error.message || "Error commenting on climb",
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
+        return this.commentService.create(climbId, currentUser.sub, content);
     }
 
+
     /**
-     * DELETE /climbs/:climbId/comment/:commentId - Delete a comment from a climb
+     * DELETE /interactions/:commentId/comment - Delete a comment
      *
-     * @param climbId - ID of the climb
-     * @param commentId - ID of the comment to be deleted
+     * @param commentId - ID of the comment to delete
      * @returns The deleted Comment object
-     * @throws HttpException if climb or comment does not exist
+     * @throws HttpException if comment does not exist
      */
-    @Delete(":climbId/comment/:commentId")
-    @ApiOperation({ summary: "Delete a comment from a climb" })
+    @Delete(":commentId/comment")
+    @ApiOperation({ summary: "Delete a comment" })
+    @ApiResponse({ status: 200, description: 'Comment deleted successfully' })
+    @ApiResponse({ status: 400, description: 'Invalid input' })
+    @ApiResponse({ status: 404, description: 'Comment not found' })
     async deleteComment(
-        @Param("climbId") climbId: string,
         @Param("commentId") commentId: string
     ): Promise<Comment> {
-        try {
-            await this.climbService.ensureClimbExists(climbId);
-            return await this.commentService.remove(climbId, commentId);
-        } catch (error) {
-            throw new HttpException(
-                error.message || "Error deleting comment",
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
+        return this.commentService.remove(commentId);
     }
 
+
     /**
-     * POST /climbs/:climbId/ascend - Register an ascension for a climb
+     * POST /interactions/:climbId/ascend - Ascend a climb
      *
      * @param climbId - ID of the climb
-     * @param data - Object containing userId
+     * @param ascensionType - Type of ascension (e.g. REDPOINT, FLASH, etc.)
      * @returns The created Ascension object
-     * @throws HttpException if climb does not exist or user already ascended it
+     * @throws HttpException if climb does not exist or already ascended
      */
     @Post(":climbId/ascend")
     @ApiOperation({ summary: "Ascend a climb" })
+    @ApiResponse({ status: 201, description: 'Ascension recorded successfully' })
+    @ApiResponse({ status: 400, description: 'Invalid input or already ascended' })
+    @ApiResponse({ status: 404, description: 'Climb not found' })
     async ascendClimb(
+        @CurrentUser() currentUser: { sub: string },
         @Param("climbId") climbId: string,
-        @Body() data: { userId: string, ascensionType: ASCENSION_TYPE }
+        @Body("ascensionType") ascensionType: ASCENSION_TYPE
     ): Promise<Ascension> {
-        try {
-            await this.climbService.ensureClimbExists(climbId);
-            return await this.ascensionService.create(climbId, data.userId, data.ascensionType);
-        } catch (error) {
-            throw new HttpException(
-                error.message || "Error ascending climb",
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
+        return this.ascensionService.create(climbId, currentUser.sub, ascensionType);
     }
 
+
+    /**
+     * POST /interactions/:userId/follow - Follow a user
+     *
+     * @param userId - ID of the user to follow
+     * @returns Follow relationship object or confirmation
+     * @throws HttpException if user does not exist or already followed
+     */
     @Post(":userId/follow")
     @ApiOperation({ summary: "Follow a user" })
+    @ApiResponse({ status: 201, description: 'Followed successfully' })
+    @ApiResponse({ status: 400, description: 'Invalid input or already following' })
+    @ApiResponse({ status: 404, description: 'User not found' })
+    @ApiResponse({ status: 409, description: 'Already following this user' })
     async followUser(
-        @Param("userId") userId: string,
-        @Body() data: { followerId: string }
+        @CurrentUser() currentUser: { sub: string },
+        @Param("userId") userId: string
     ) {
-        try {
-            return await this.followService.followUser(data.followerId, userId);
-        } catch (error) {
-            throw new HttpException(
-                error.message || "Error following user",
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
+        return this.followService.followUser(currentUser.sub, userId);
     }
 
-    @Get(":userId/ascensions")
-    @ApiOperation({ summary: "Get a ascensions  list" })
-    async getAscensions(@Param("userId") userId: string) {
-        return this.ascensionService.getAscensions(userId);
-    }
 
-    @Delete(":userId/unfollow")
+    /**
+     * DELETE /interactions/:userId/follow - Unfollow a user
+     *
+     * @param userId - ID of the user to unfollow
+     * @returns Confirmation of unfollow
+     * @throws HttpException if follow relationship does not exist
+     */
+    @Delete(":userId/follow")
     @ApiOperation({ summary: "Unfollow a user" })
+    @ApiResponse({ status: 200, description: 'Unfollowed successfully' })
+    @ApiResponse({ status: 400, description: 'Invalid input' })
+    @ApiResponse({ status: 404, description: 'Follow relationship not found' })
     async unfollowUser(
-        @Param("userId") userId: string,
-        @Body() data: { followerId: string }
+        @CurrentUser() currentUser: { sub: string },
+        @Param("userId") userId: string
     ) {
-        try {
-            return await this.followService.unfollowUser(data.followerId, userId);
-        } catch (error) {
-            throw new HttpException(
-                error.message || "Error unfollowing user",
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
+        return this.followService.unfollowUser(currentUser.sub, userId);
     }
 
+
+    /**
+     * GET /interactions/:userId/followers - Get followers of a user
+     *
+     * @param userId - ID of the user
+     * @param page - Page number for pagination
+     * @param pageSize - Number of results per page
+     * @returns Paginated list of followers
+     * @throws HttpException if user does not exist
+     */
     @Get(":userId/followers")
-    @ApiOperation({ summary: "Get a user's followers" })
-    async getFollowers(@Param("userId") userId: string) {
-        return this.followService.getFollowers(userId);
+    @ApiOperation({ summary: "Get user followers" })
+    @ApiResponse({ status: 200, description: 'Followers list retrieved' })
+    @ApiResponse({ status: 400, description: 'Invalid input' })
+    @ApiResponse({ status: 404, description: 'User not found' })
+    async getFollowers(
+        @Param("userId") userId: string,
+        @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query("pageSize", new DefaultValuePipe(10), ParseIntPipe) pageSize: number
+    ): Promise<PaginationResponse<any>> {
+        console.log("getFollowers", userId, page, pageSize);
+        return this.followService.getFollowers(userId, page, pageSize);
     }
 
+    /**
+     * GET /interactions/:userId/following - Get users followed by a user
+     *
+     * @param userId - ID of the user
+     * @param page - Page number for pagination
+     * @param pageSize - Number of results per page
+     * @returns Paginated list of followed users
+     * @throws HttpException if user does not exist
+     */
     @Get(":userId/following")
-    @ApiOperation({ summary: "Get a user's following list" })
-    async getFollowing(@Param("userId") userId: string) {
-        return this.followService.getFollowing(userId);
+    @ApiOperation({ summary: "Get user following list" })
+    @ApiResponse({ status: 200, description: 'Following list retrieved' })
+    @ApiResponse({ status: 400, description: 'Invalid input' })
+    @ApiResponse({ status: 404, description: 'User not found' })
+    async getFollowing(
+        @Param("userId") userId: string,
+        @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query("pageSize", new DefaultValuePipe(10), ParseIntPipe) pageSize: number
+    ): Promise<PaginationResponse<any>> {
+        return this.followService.getFollowing(userId, page, pageSize);
+    }
+
+    /**
+     * GET /interactions/:userId/ascensions - Get user ascensions
+     *
+     * @param userId - ID of the user
+     * @param page - Page number for pagination
+     * @param pageSize - Number of results per page
+     * @returns Paginated list of Ascension objects
+     * @throws HttpException if user does not exist
+     */
+    @Get(":userId/ascensions")
+    @ApiOperation({ summary: "Get user ascensions" })
+    @ApiResponse({ status: 200, description: 'Ascensions list retrieved' })
+    @ApiResponse({ status: 400, description: 'Invalid input' })
+    @ApiResponse({ status: 404, description: 'User not found' })
+    async getAscensions(
+        @Param("userId") userId: string,
+        @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query("pageSize", new DefaultValuePipe(10), ParseIntPipe) pageSize: number
+    ): Promise<PaginationResponse<Ascension>> {
+        return this.ascensionService.getAscensions(userId, page, pageSize);
     }
 }
