@@ -72,6 +72,32 @@ export class FollowService {
     }
 
     /**
+     * Allows a user to remove one of their followers.
+     *
+     * @param followerId - The ID of the follower to remove
+     * @param followingId - The ID of the current user
+     * @returns The deleted Follow record
+     */
+    async removeFollower(followerId: string, followingId: string): Promise<Prisma.FollowGetPayload<any>> {
+        const follow = await this.prisma.follow.findFirst({
+            where: {
+                follower: followerId,
+                following: followingId,
+            },
+        });
+
+        if (!follow) {
+            throw new NotFoundException("Follow relationship not found");
+        }
+
+        return this.prisma.follow.delete({
+            where: { id: follow.id },
+            include: { followerUser: true },
+        });
+    }
+
+
+    /**
      * Retrieves a paginated list of followers for a user.
      *
      * @param userId - The ID of the user whose followers are being requested

@@ -186,6 +186,27 @@ export class InteractionController {
         return this.followService.unfollowUser(currentUser.sub, userId);
     }
 
+    /**
+     * DELETE /interactions/:userId/remove-follower - Remove a follower
+     *
+     * @param userId - ID of the follower to remove
+     * @returns Confirmation of removal
+     * @throws HttpException if follow relationship does not exist
+     */
+    @Delete(":userId/remove-follower")
+    @ApiOperation({ summary: "Remove a follower" })
+    @ApiResponse({ status: 200, description: 'Follower removed successfully' })
+    @ApiResponse({ status: 400, description: 'Invalid input' })
+    @ApiResponse({ status: 404, description: 'Follow relationship not found' })
+    async removeFollower(
+        @CurrentUser() currentUser: { sub: string },
+        @Param("userId") userId: string
+    ) {
+        return this.followService.removeFollower(userId, currentUser.sub);
+    }
+
+
+
 
     /**
      * GET /interactions/:userId/followers - Get followers of a user
@@ -206,7 +227,6 @@ export class InteractionController {
         @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query("pageSize", new DefaultValuePipe(10), ParseIntPipe) pageSize: number
     ): Promise<PaginationResponse<any>> {
-        console.log("getFollowers", userId, page, pageSize);
         return this.followService.getFollowers(userId, page, pageSize);
     }
 
