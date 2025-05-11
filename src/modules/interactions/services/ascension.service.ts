@@ -92,4 +92,41 @@ export class AscensionService {
         return { data, total, page, pageSize };
     }
 
+    /**
+        * Checks if a user has ascended a specific climb
+        * 
+        * @param climbId - The ID of the climb to check
+        * @param userId - The ID of the user to check
+        * @returns A boolean indicating if the user has ascended the climb
+        *          and the ascension details if exists
+        */
+    async hasUserAscended(
+        climbId: string,
+        userId: string
+    ): Promise<{
+        hasAscended: boolean;
+        ascension?: Prisma.AscensionGetPayload<any>;
+    }> {
+        await GenericHelpers.verifyEntityExists(
+            (id) => this.prisma.climb.findUnique({ where: { id } }),
+            'Climb',
+            climbId
+        );
+
+        await GenericHelpers.verifyEntityExists(
+            (id) => this.prisma.user.findUnique({ where: { id } }),
+            'User',
+            userId
+        );
+
+        const ascension = await this.prisma.ascension.findFirst({
+            where: { climbId, userId },
+        });
+
+        return {
+            hasAscended: !!ascension,
+            ascension: ascension || undefined
+        };
+    }
+
 }

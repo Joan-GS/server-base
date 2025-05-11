@@ -21,6 +21,8 @@ import { RolesGuard } from "../../auth/utils/roles.guard";
 import { PaginationResponse } from "../../../utils/generic.types.utils";
 import { AuthService } from "../../auth/services/auth.service";
 import { ROLE } from "@joan16/shared-base";
+import { AscensionService } from "../../interactions/services/ascension.service";
+import { CurrentUser } from "../../auth/decorators/current-user.decorator";
 
 @ApiTags("climbs")
 @Controller("climbs")
@@ -29,20 +31,36 @@ import { ROLE } from "@joan16/shared-base";
 export class ClimbController {
     constructor(
         private readonly authService: AuthService,
-        private readonly climbService: ClimbService
-    ) {}
+        private readonly climbService: ClimbService,
+        private readonly ascensionService: AscensionService
+    ) { }
 
     /************
      ** METHODS **
      *************/
 
     // Utility function to ensure that a climb exists
-    public async ensureClimbExists(id: string): Promise<Climb> {
+    public async ensureClimbExists(id: string, currentUserId?: string): Promise<Climb & { isAscended: boolean }> {
         const climb = await this.climbService.findOne(id);
         if (!climb) {
             throw new NotFoundException(`Climb with id ${id} not found`);
         }
-        return climb;
+
+        // Si no hay usuario autenticado, devolver false en isAscended
+        if (!currentUserId) {
+            return {
+                ...climb,
+                isAscended: false
+            };
+        }
+
+        // Verificar si el usuario ha ascendido esta ruta
+        const ascent = await this.ascensionService.hasUserAscended(id, currentUserId);
+
+        return {
+            ...climb,
+            isAscended: ascent.hasAscended // Convertir a booleano (true si existe un ascent)
+        };
     }
 
     /************
@@ -84,8 +102,9 @@ export class ClimbController {
      */
     @Get(":id")
     @ApiOperation({ summary: "Get a climb by ID" })
-    async findOne(@Param("id") id: string): Promise<Climb> {
-        return this.ensureClimbExists(id);
+    async findOne(@CurrentUser() currentUser: { sub: string }
+    , @Param("id") id: string): Promise<Climb> {
+        return this.ensureClimbExists(id, currentUser.sub);
     }
 
     /**

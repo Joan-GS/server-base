@@ -6,10 +6,11 @@ import { AuthService } from "../auth/services/auth.service";
 import { UserModule } from "../users/users.module";
 import { MailService } from "../email/services/mail.service";
 import { InteractionModule } from "../interactions/interaction.module";
+import { AscensionService } from "../interactions/services/ascension.service";
 
 @Module({
     imports: [CommonModule, UserModule, forwardRef(() =>InteractionModule)],
-    providers: [ClimbService, AuthService, MailService],
+    providers: [ClimbService, AuthService, MailService, AscensionService],
     controllers: [ClimbController],
     exports: [ClimbService],
 })
