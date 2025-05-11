@@ -36,8 +36,20 @@ export class AscensionService {
             throw new ConflictException('User already ascended this climb');
         }
 
-        return this.prisma.ascension.create({
-            data: { climbId, userId, ascensionType },
+
+        return this.prisma.$transaction(async (tx) => {
+            const ascension = await this.prisma.ascension.create({
+                data: { climbId, userId, ascensionType },
+            });
+
+            await tx.climb.update({
+                where: { id: climbId },
+                data: {
+                    ascensionsCount: { increment: 1 },
+                },
+            });
+
+            return ascension;
         });
     }
 
