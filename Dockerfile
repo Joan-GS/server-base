@@ -1,43 +1,34 @@
-# PRODUCTION DOCKERFILE
-# ---------------------
-# This Dockerfile allows to build a Docker image of the NestJS application
-# and based on a NodeJS 20 image. The multi-stage mechanism allows to build
-# the application in a "builder" stage and then create a lightweight production
-# image containing the required dependencies and the JS build files.
-# 
-# Dockerfile best practices
-# https://docs.docker.com/develop/develop-images/dockerfile_best-practices/
-# Dockerized NodeJS best practices
-# https://github.com/nodejs/docker-node/blob/master/docs/BestPractices.md
-# https://www.bretfisher.com/node-docker-good-defaults/
-# http://goldbergyoni.com/checklist-best-practice-of-node-js-in-production/
+# Etapa de construcción
+FROM node:20-slim AS builder
 
-FROM node:20-alpine as builder
+ENV NODE_ENV=build
 
-ENV NODE_ENV build
+# Crear usuario no root
+RUN useradd --user-group --create-home --shell /bin/false nodeuser
 
-USER node
-WORKDIR /home/node
+WORKDIR /home/nodeuser
 
 COPY package*.json ./
 RUN npm ci
 
-COPY --chown=node:node . .
+COPY . .
 RUN npx prisma generate \
     && npm run build \
     && npm prune --omit=dev
 
-# ---
+# Etapa de producción
+FROM node:20-slim AS production
 
-FROM node:20-alpine
+ENV NODE_ENV=production
 
-ENV NODE_ENV production
+# Crear usuario no root
+RUN useradd --user-group --create-home --shell /bin/false nodeuser
 
-USER node
-WORKDIR /home/node
+WORKDIR /home/nodeuser
+USER nodeuser
 
-COPY --from=builder --chown=node:node /home/node/package*.json ./
-COPY --from=builder --chown=node:node /home/node/node_modules/ ./node_modules/
-COPY --from=builder --chown=node:node /home/node/dist/ ./dist/
+COPY --from=builder /home/nodeuser/package*.json ./
+COPY --from=builder /home/nodeuser/node_modules/ ./node_modules/
+COPY --from=builder /home/nodeuser/dist/ ./dist/
 
 CMD ["node", "dist/server.js"]
