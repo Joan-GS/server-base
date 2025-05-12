@@ -1,39 +1,43 @@
-# Etapa de build
-FROM node:20.11.1-slim AS builder
+# PRODUCTION DOCKERFILE
+# ---------------------
+# This Dockerfile allows to build a Docker image of the NestJS application
+# and based on a NodeJS 20 image. The multi-stage mechanism allows to build
+# the application in a "builder" stage and then create a lightweight production
+# image containing the required dependencies and the JS build files.
+# 
+# Dockerfile best practices
+# https://docs.docker.com/develop/develop-images/dockerfile_best-practices/
+# Dockerized NodeJS best practices
+# https://github.com/nodejs/docker-node/blob/master/docs/BestPractices.md
+# https://www.bretfisher.com/node-docker-good-defaults/
+# http://goldbergyoni.com/checklist-best-practice-of-node-js-in-production/
 
-ENV NODE_ENV=build
+FROM node:20-alpine as builder
 
-RUN apt-get update && apt-get install -y openssl ca-certificates \
- && apt-get clean && rm -rf /var/lib/apt/lists/*
+ENV NODE_ENV build
 
-RUN useradd --user-group --create-home --shell /bin/false nodeuser
-WORKDIR /home/nodeuser
+USER node
+WORKDIR /home/node
 
 COPY package*.json ./
 RUN npm ci
 
-COPY . .
+COPY --chown=node:node . .
 RUN npx prisma generate \
     && npm run build \
     && npm prune --omit=dev
 
-# Etapa de producción
-FROM node:20.11.1-slim AS production
+# ---
 
-ENV NODE_ENV=production
+FROM node:20-alpine
 
-# 👇 Aquí instalamos OpenSSL 1.1 y certificados raíz
-RUN apt-get update && \
-    apt-get install -y openssl ca-certificates && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+ENV NODE_ENV production
 
-RUN useradd --user-group --create-home --shell /bin/false nodeuser
-WORKDIR /home/nodeuser
-USER nodeuser
+USER node
+WORKDIR /home/node
 
-COPY --from=builder /home/nodeuser/package*.json ./
-COPY --from=builder /home/nodeuser/node_modules/ ./node_modules/
-COPY --from=builder /home/nodeuser/dist/ ./dist/
+COPY --from=builder --chown=node:node /home/node/package*.json ./
+COPY --from=builder --chown=node:node /home/node/node_modules/ ./node_modules/
+COPY --from=builder --chown=node:node /home/node/dist/ ./dist/
 
 CMD ["node", "dist/server.js"]
