@@ -1,41 +1,26 @@
-# PRODUCTION DOCKERFILE
-# ---------------------
-FROM node:20-alpine as builder
-
-ENV NODE_ENV build
-
-WORKDIR /home/node
-
-# Instala las dependencias del sistema como root (antes de cambiar de usuario)
-RUN apk add --no-cache openssl
-
-# Ahora cambiamos al usuario node
-USER node
-
-COPY package*.json ./
-RUN npm ci
-
-COPY --chown=node:node . .
-RUN npx prisma generate \
-    && npm run build \
-    && npm prune --omit=dev
-
-# ---
-
 FROM node:20-alpine
 
-ENV NODE_ENV production
+WORKDIR /app
 
-WORKDIR /home/node
-
-# Instala openssl como root primero
+# Instalar dependencias del sistema para Prisma
 RUN apk add --no-cache openssl
 
-# Luego cambia al usuario node
-USER node
+# Copiar archivos necesarios
+COPY package*.json ./
+COPY prisma ./prisma
 
-COPY --from=builder --chown=node:node /home/node/package*.json ./
-COPY --from=builder --chown=node:node /home/node/node_modules/ ./node_modules/
-COPY --from=builder --chown=node:node /home/node/dist/ ./dist/
+# Instalar dependencias y generar cliente Prisma
+RUN npm install
+RUN npx prisma generate
 
+# Copiar el resto de la aplicación
+COPY . .
+
+# Construir la aplicación
+RUN npm run build
+
+# Puerto expuesto (solo documentación, Railway lo maneja internamente)
+EXPOSE 8080
+
+# Comando de inicio adaptado para Railway
 CMD ["node", "dist/server.js"]
