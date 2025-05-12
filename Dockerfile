@@ -4,11 +4,13 @@ FROM node:20-alpine as builder
 
 ENV NODE_ENV build
 
-USER node
 WORKDIR /home/node
 
-# Instala las dependencias del sistema necesarias para Prisma
+# Instala las dependencias del sistema como root (antes de cambiar de usuario)
 RUN apk add --no-cache openssl
+
+# Ahora cambiamos al usuario node
+USER node
 
 COPY package*.json ./
 RUN npm ci
@@ -24,11 +26,13 @@ FROM node:20-alpine
 
 ENV NODE_ENV production
 
-USER node
 WORKDIR /home/node
 
-# Instala openssl en la imagen final también
+# Instala openssl como root primero
 RUN apk add --no-cache openssl
+
+# Luego cambia al usuario node
+USER node
 
 COPY --from=builder --chown=node:node /home/node/package*.json ./
 COPY --from=builder --chown=node:node /home/node/node_modules/ ./node_modules/
