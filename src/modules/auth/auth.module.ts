@@ -8,6 +8,7 @@ import { AuthGuard } from "./security/auth.guard";
 import { MailModule } from "../email/email.module";
 import { ClimbModule } from "../climbs/climb.module";
 import { InteractionModule } from "../interactions/interaction.module";
+import { PrismaService } from "../common";
 
 @Module({
     imports: [
@@ -27,6 +28,7 @@ import { InteractionModule } from "../interactions/interaction.module";
             provide: APP_GUARD,
             useClass: AuthGuard,
         },
+        PrismaService
     ],
     controllers: [AuthController],
     exports: [AuthService],

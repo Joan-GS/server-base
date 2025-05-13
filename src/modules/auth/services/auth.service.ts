@@ -13,17 +13,19 @@ import * as bcrypt from "bcrypt";
 import { ClimbService } from "../../climbs/services/climb.service";
 import { FollowService } from "../../interactions/services/follow.service";
 import { AscensionService } from "../../interactions/services/ascension.service";
+import { PrismaService } from "../../common";
 
 @Injectable()
 export class AuthService {
     public constructor(
+        private readonly prisma: PrismaService,
         private readonly usersService: UserService,
         private readonly followService: FollowService,
         private readonly ascensionService: AscensionService,
         private readonly mailService: MailService,
         private readonly jwtService: JwtService,
         private readonly climbService: ClimbService
-    ) {}
+    ) { }
 
     async me(access_token: string) {
         // Decode the token to get the payload
@@ -64,19 +66,19 @@ export class AuthService {
     async getProfile(access_token: string, userId: string) {
         // Decode who is making the request
         const decoded = this.jwtService.decode(access_token) as { email: string; sub: string };
-    
+
         if (!decoded?.sub) {
             throw new UnauthorizedException("Invalid token");
         }
-    
+
         const currentUserId = decoded.sub;
-    
+
         // Find the profile user
         const user = await this.usersService.findById(userId);
         if (!user) {
             throw new NotFoundException("User not found");
         }
-    
+
         const followers = await this.followService.getFollowers(user.id);
         const following = await this.followService.getFollowing(user.id);
         const ascensions = await this.ascensionService.getAscensions(user.id);
@@ -86,10 +88,10 @@ export class AuthService {
             `{"createdBy": "${user.id}"}`,
             user.id
         );
-    
+
         // Check if current user is following the profile user
         const isFollowing = await this.followService.isFollowing(currentUserId, user.id);
-    
+
         return {
             id: user?.id,
             email: user?.email,
@@ -101,7 +103,7 @@ export class AuthService {
             isFollowing,
         };
     }
-    
+
 
     async signIn(email: string, pass: string) {
         const user = await this.usersService.findByEmail(email);
@@ -142,7 +144,7 @@ export class AuthService {
         verificationCode: string
     ): Promise<User> {
         // Check if the user already exists
-        const existingUser = await this.usersService.findByEmail(data.email);
+        const existingUser = await this.prisma.user.findUnique({ where: { email: data.email } });
         if (existingUser) {
             throw new ConflictException("User already exists");
         }
