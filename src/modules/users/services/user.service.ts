@@ -146,6 +146,23 @@ export class UserService {
         return this.prisma.user.delete({ where: { id } });
     }
 
+
+    async findByResetToken(resetToken: string): Promise<User | null> {
+        return this.prisma.user.findUnique({
+            where: { resetToken },
+        });
+    }
+
+    async updateResetToken(userId: string, resetToken: string | null, resetTokenExpiresAt: Date | null): Promise<User> {
+        return this.prisma.user.update({
+            where: { id: userId },
+            data: {
+                resetToken,
+                resetTokenExpiresAt,
+            },
+        });
+    }
+
     // ============ HELPER METHODS ============
 
     /**

@@ -248,4 +248,81 @@ export class AuthService {
             message: "A new verification code has been sent to your email",
         };
     }
+
+    /**
+     * Request a password reset for a user
+     * @param email - User's email address
+     */
+    async requestPasswordReset(email: string): Promise<void> {
+        const user = await this.usersService.findByEmail(email);
+
+        // Don't throw error if user doesn't exist (security measure)
+        if (!user) {
+            return;
+        }
+
+        // Generate reset token (expires in 1 hour)
+        const resetToken = await this.jwtService.signAsync(
+            { sub: user.id },
+            {
+                secret: process.env.JWT_RESET_SECRET,
+                expiresIn: '1h',
+            }
+        );
+
+        // Store the token in the database
+        await this.usersService.update(user.id, {
+            resetToken,
+        });
+
+        // Send email with reset link
+        await this.mailService.sendPasswordReset(user, resetToken);
+    }
+
+    /**
+     * Reset user's password using a valid token
+     * @param token - Password reset token
+     * @param newPassword - New password
+     */
+    async resetPassword(token: string, newPassword: string): Promise<void> {
+        try {
+            // Verify the token
+            const payload = await this.jwtService.verifyAsync(token, {
+                secret: process.env.JWT_RESET_SECRET,
+            });
+
+            // Find user by ID from token
+            const user = await this.usersService.findById(payload.sub);
+            if (!user) {
+                throw new BadRequestException('Invalid token');
+            }
+
+            // Verify the token matches the one stored in DB and isn't expired
+            if (user.resetToken !== token ||
+                (user.resetTokenExpiresAt && new Date() > user.resetTokenExpiresAt)) {
+                throw new BadRequestException('Invalid or expired token');
+            }
+
+            // Validate password strength
+            if (newPassword.length < 8) {
+                throw new BadRequestException('Password must be at least 8 characters long');
+            }
+
+            // Hash new password
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+            // Update password and clear reset token
+            await this.usersService.update(user.id, {
+                password: hashedPassword,
+                resetToken: null,
+                resetTokenExpiresAt: null,
+            });
+
+        } catch (error) {
+            if (error.name === 'TokenExpiredError') {
+                throw new BadRequestException('Token has expired');
+            }
+            throw new BadRequestException('Invalid token');
+        }
+    }
 }

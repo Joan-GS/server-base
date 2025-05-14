@@ -16,7 +16,7 @@ import { ROLE } from "@joan16/shared-base";
 @ApiTags("auth")
 @Controller("auth")
 export class AuthController {
-    constructor(private readonly authService: AuthService) {}
+    constructor(private readonly authService: AuthService) { }
 
     /************
      ** ACTIONS **
@@ -178,6 +178,55 @@ export class AuthController {
 
         return {
             message: "A new verification code has been sent to your email",
+        };
+    }
+
+
+    /**
+     * POST /auth/forgot-password - Request a password reset
+     *
+     * @param email - The user's email address
+     * @returns Success message
+     * @throws BadRequestException if email is invalid or user doesn't exist
+     */
+    @Public()
+    @Post('forgot-password')
+    @ApiOperation({ summary: 'Request a password reset' })
+    async forgotPassword(@Body('email') email: string) {
+        if (!email) {
+            throw new BadRequestException('Email is required');
+        }
+
+        await this.authService.requestPasswordReset(email);
+
+        return {
+            message: 'If an account with that email exists, a reset link has been sent',
+        };
+    }
+
+    /**
+     * POST /auth/reset-password - Reset user's password using a token
+     *
+     * @param token - The password reset token
+     * @param newPassword - The new password
+     * @returns Success message
+     * @throws BadRequestException if token is invalid or password is weak
+     */
+    @Public()
+    @Post('reset-password')
+    @ApiOperation({ summary: 'Reset password using a token' })
+    async resetPassword(
+        @Body('token') token: string,
+        @Body('newPassword') newPassword: string,
+    ) {
+        if (!token || !newPassword) {
+            throw new BadRequestException('Token and new password are required');
+        }
+
+        await this.authService.resetPassword(token, newPassword);
+
+        return {
+            message: 'Password has been successfully reset',
         };
     }
 }
