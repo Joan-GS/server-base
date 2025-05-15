@@ -223,11 +223,13 @@ export class InteractionController {
     @ApiResponse({ status: 400, description: 'Invalid input' })
     @ApiResponse({ status: 404, description: 'User not found' })
     async getFollowers(
+        @CurrentUser() currentUser: { sub: string },
+
         @Param("userId") userId: string,
         @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query("pageSize", new DefaultValuePipe(10), ParseIntPipe) pageSize: number
     ): Promise<PaginationResponse<any>> {
-        return this.followService.getFollowers(userId, page, pageSize);
+        return this.followService.getFollowers(userId, currentUser.sub, page, pageSize);
     }
 
     /**
@@ -245,11 +247,12 @@ export class InteractionController {
     @ApiResponse({ status: 400, description: 'Invalid input' })
     @ApiResponse({ status: 404, description: 'User not found' })
     async getFollowing(
+        @CurrentUser() currentUser: { sub: string },
         @Param("userId") userId: string,
         @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query("pageSize", new DefaultValuePipe(10), ParseIntPipe) pageSize: number
     ): Promise<PaginationResponse<any>> {
-        return this.followService.getFollowing(userId, page, pageSize);
+        return this.followService.getFollowing(userId, currentUser.sub, page, pageSize);
     }
 
     /**

@@ -17,8 +17,8 @@ export class ProfileService {
         const [user, followers, following, ascensions, myClimbs, isFollowing] =
             await Promise.all([
                 this.usersService.findById(profileUserId),
-                this.followService.getFollowers(profileUserId),
-                this.followService.getFollowing(profileUserId),
+                this.followService.getFollowers(profileUserId,currentUserId),
+                this.followService.getFollowing(profileUserId, currentUserId),
                 this.ascensionService.getAscensions(profileUserId),
                 this.climbService.list(
                     1,

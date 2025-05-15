@@ -30,6 +30,7 @@ export class AuthService {
     async me(access_token: string) {
         // Decode the token to get the payload
         const decoded = this.jwtService.decode(access_token) as {
+            sub: string;
             email: string;
         };
 
@@ -43,8 +44,8 @@ export class AuthService {
         if (!user) {
             throw new UnauthorizedException("User not found");
         }
-        const followers = await this.followService.getFollowers(user.id);
-        const following = await this.followService.getFollowing(user.id);
+        const followers = await this.followService.getFollowers(user.id, decoded.sub);
+        const following = await this.followService.getFollowing(user.id, decoded.sub);
         const ascensions = await this.ascensionService.getAscensions(user.id);
         const myClimbs = await this.climbService.list(
             1,
@@ -79,8 +80,8 @@ export class AuthService {
             throw new NotFoundException("User not found");
         }
 
-        const followers = await this.followService.getFollowers(user.id);
-        const following = await this.followService.getFollowing(user.id);
+        const followers = await this.followService.getFollowers(user.id, decoded.sub);
+        const following = await this.followService.getFollowing(user.id, decoded.sub);
         const ascensions = await this.ascensionService.getAscensions(user.id);
         const myClimbs = await this.climbService.list(
             1,

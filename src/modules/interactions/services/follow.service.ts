@@ -106,6 +106,7 @@ export class FollowService {
      * @returns A paginated response containing the list of followers
      */
     async getFollowers(userId: string,
+        currentUserId: string,
         page: number = 1,
         pageSize: number = 10
     ): Promise<PaginationResponse<any>> {
@@ -125,7 +126,7 @@ export class FollowService {
             this.prisma.follow.count({ where: { following: userId } }),
         ]);
 
-        const data = await this.addFollowingStatus(data1, userId);
+        const data = await this.addFollowingStatus(data1, currentUserId);
 
 
         return { data, total, page, pageSize };
@@ -140,6 +141,7 @@ export class FollowService {
     * @returns A paginated response containing the list of followings
     */
     async getFollowing(userId: string,
+        currentUserId: string,
         page: number = 1,
         pageSize: number = 10
     ): Promise<PaginationResponse<any>> {
@@ -159,7 +161,7 @@ export class FollowService {
             this.prisma.follow.count({ where: { follower: userId } }),
         ]);
 
-        const data = await this.addFollowingStatus(data1, userId);
+        const data = await this.addFollowingStatus(data1, currentUserId);
 
 
         return { data, total, page, pageSize };
