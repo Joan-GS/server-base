@@ -195,9 +195,9 @@ export class FollowService {
     private async addFollowingStatus(users: any[], currentUserId: string) {
         return Promise.all(users.map(async user => ({
             ...user,
-            isFollowing: user.followingUser?.id === currentUserId
+            isFollowing: user.followerUser?.id === currentUserId
                 ? false
-                : await this.isFollowing(currentUserId, user.followingUser?.id),
+                : await this.isFollowing(currentUserId, user.followerUser?.id),
         })));
     }
 }

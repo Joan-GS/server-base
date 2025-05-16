@@ -224,7 +224,6 @@ export class InteractionController {
     @ApiResponse({ status: 404, description: 'User not found' })
     async getFollowers(
         @CurrentUser() currentUser: { sub: string },
-
         @Param("userId") userId: string,
         @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query("pageSize", new DefaultValuePipe(10), ParseIntPipe) pageSize: number
