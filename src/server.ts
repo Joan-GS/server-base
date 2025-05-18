@@ -62,6 +62,9 @@ async function bootstrap(): Promise<void> {
 
     // @todo Enable Helmet for better API security headers
 
+    const port = process.env.PORT || API_DEFAULT_PORT;
+    const host = '0.0.0.0'; // Escuchar en todas las interfaces
+
     app.setGlobalPrefix(process.env.API_PREFIX || API_DEFAULT_PREFIX);
 
     if (!process.env.SWAGGER_ENABLE || process.env.SWAGGER_ENABLE === "1") {
@@ -69,18 +72,21 @@ async function bootstrap(): Promise<void> {
     }
 
     const logInterceptor = app.select(CommonModule).get(LogInterceptor);
-    const apiResponseInterceptor = app.select(CommonModule).get(ApiResponseInterceptor)
+    const apiResponseInterceptor = app.select(CommonModule).get(ApiResponseInterceptor);
     app.useGlobalInterceptors(logInterceptor, apiResponseInterceptor);
     app.useGlobalFilters(new AllExceptionsFilter());
 
-
     app.enableCors({
-        origin: '*', // Or use a specific domain like 'http://localhost:8081' if you want to restrict it
-        methods: ['GET', 'POST', 'PUT', 'DELETE'], // Add methods based on your needs
-        allowedHeaders: ['Content-Type', 'Authorization'], // Add headers if needed
-      });
+        origin: '*',
+        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+    });
 
-    await app.listen(process.env.API_PORT || API_DEFAULT_PORT);
+    // Configuración específica para Fastify en Render
+    await app.listen(port, host, () => {
+        console.log(`Server running on http://${host}:${port}`);
+        console.log(`Swagger docs available at http://${host}:${port}${SWAGGER_PREFIX}`);
+    });
 }
 
 /**
