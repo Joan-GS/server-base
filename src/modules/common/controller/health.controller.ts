@@ -1,7 +1,8 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { HealthCheckService, PrismaHealthIndicator } from '@nestjs/terminus';
 
 import { PrismaService } from '../provider';
+import { HealthGuard } from '../security/health.guard';
 
 @Controller('health')
 export class HealthController {
@@ -13,7 +14,7 @@ export class HealthController {
     ) {}
 
     @Get()
-    // @UseGuards(HealthGuard)
+    @UseGuards(HealthGuard)
     public async healthCheck() {
 
         return this.health.check([

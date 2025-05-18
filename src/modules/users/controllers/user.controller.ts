@@ -1,22 +1,20 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, ParseIntPipe } from "@nestjs/common";
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, ParseIntPipe } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { UserService } from "../services/user.service";
 import { UserPipe, UserUpdatePipe } from "../flow/user.pipe";
+import { Roles } from "../../auth/decorators/roles.decorator";
+import { RolesGuard } from "../../auth/utils/roles.guard";
 import { PaginationResponse } from "../../../utils/generic.types.utils";
+import { ROLE } from "@joan16/shared-base";
 import { Prisma, User } from "@prisma/client";
 import { CurrentUser } from "../../auth/decorators/current-user.decorator";
 
 @ApiTags("users")
 @Controller("users")
-
+@Roles(ROLE.USER)
+@UseGuards(RolesGuard)
 export class UserController {
     constructor(private readonly userService: UserService) { }
-
-    @Get('ping')
-  public ping() {
-    console.log('✅ Ping recibido desde /health/ping');
-    return { status: 'ok' };
-  }
 
     /**
      * GET /users - List users with pagination and optional filters

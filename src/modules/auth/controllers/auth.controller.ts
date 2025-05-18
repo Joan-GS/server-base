@@ -9,7 +9,7 @@ import {
 } from "@nestjs/common";
 import { AuthService } from "../services/auth.service";
 import { Prisma, User } from "@prisma/client";
-import { ApiTags, ApiOperation } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiBody } from "@nestjs/swagger";
 import { Public } from "../decorators/public.decorator";
 import { ROLE } from "@joan16/shared-base";
 
@@ -91,6 +91,19 @@ export class AuthController {
     @Public()
     @Post("login")
     @ApiOperation({ summary: "Authenticate a user" })
+    @ApiBody({ 
+    type: Object,
+    description: 'User credentials',
+    examples: {
+      valid: {
+        summary: 'Valid credentials example',
+        value: {
+          email: 'test@localhost.com',
+          password: '123456789jJ&'
+        }
+      }
+    }
+  })
     async login(@Body() signInDto: Record<string, any>) {
         // Validate input early
         if (!signInDto.email || !signInDto.password) {
