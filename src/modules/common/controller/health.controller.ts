@@ -14,7 +14,7 @@ export class HealthController {
     ) {}
 
     @Get()
-    @UseGuards(HealthGuard)
+    // @UseGuards(HealthGuard)
     public async healthCheck() {
 
         return this.health.check([
